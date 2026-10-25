@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using MarchesVeille.Core.Data;
 using MarchesVeille.Core.Models;
+using Xunit;
 
 namespace MarchesVeille.Tests;
 

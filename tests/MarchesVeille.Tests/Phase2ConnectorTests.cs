@@ -3,6 +3,7 @@ using MarchesVeille.Core.Cli;
 using MarchesVeille.Core.Config;
 using MarchesVeille.Core.Models;
 using MarchesVeille.Core.Providers;
+using Xunit;
 
 namespace MarchesVeille.Tests;
 

@@ -1,5 +1,6 @@
 using MarchesVeille.Core.Data;
 using MarchesVeille.Core.Util;
+using Xunit;
 
 namespace MarchesVeille.Tests;
 
