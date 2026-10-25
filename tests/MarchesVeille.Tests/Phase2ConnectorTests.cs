@@ -232,7 +232,7 @@ public class Phase2ConnectorTests
     public async Task Cli_validates_arguments()
     {
         using var t = new TestDb();
-        IReadOnlyList<IMarketplaceProvider> Factory(ConnectorsConfig _) => new IMarketplaceProvider[] { new MockProvider("boamp", new()) };
+        IReadOnlyList<IMarketplaceProvider> Factory(ConnectorsConfig _) => new IMarketplaceProvider[] { new MockProvider("boamp", Array.Empty<Notice>()) };
 
         var o1 = new StringWriter();
         Assert.Equal(2, await CliRunner.RunAsync(new[] { "--scrap", "--source=inconnue" }, o1, t.Dir, Factory));
