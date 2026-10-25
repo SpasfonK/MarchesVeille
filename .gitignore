@@ -1,0 +1,8 @@
+bin/
+obj/
+publish/
+*.db
+*.db-wal
+*.db-shm
+marches-scrap.log
+.vs/

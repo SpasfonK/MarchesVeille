@@ -1,0 +1,167 @@
+<Window x:Class="MarchesVeille.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:MarchesVeille.Desktop"
+        Title="Veille Marchés Publics" Width="1320" Height="820" MinWidth="980" MinHeight="600"
+        Background="{StaticResource BgBrush}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Recherche -->
+        <Border Grid.Row="0" Background="{StaticResource CardBrush}" CornerRadius="8" BorderBrush="{StaticResource BorderBrushSoft}"
+                BorderThickness="1" Padding="10" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="SearchBox" FontSize="15" Padding="8,6" BorderThickness="0" VerticalContentAlignment="Center"
+                         ToolTip="Mots, &quot;phrase exacte&quot;, AND / OR / NOT. Recherche instantanée, insensible aux accents et à la casse."
+                         TextChanged="OnFilterChanged" KeyDown="OnSearchKeyDown"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                    <TextBlock Text="Tri :" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{StaticResource MutedBrush}"/>
+                    <ComboBox x:Name="SortCombo" Width="150" SelectedIndex="0" SelectionChanged="OnFilterChanged">
+                        <ComboBoxItem Content="Pertinence"/>
+                        <ComboBoxItem Content="Plus récents"/>
+                        <ComboBoxItem Content="Échéance proche"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Filtres rapides -->
+        <WrapPanel Grid.Row="1" Margin="0,0,0,8" VerticalAlignment="Center">
+            <ToggleButton x:Name="ChipGrandEst" Style="{StaticResource Chip}" Content="Région Grand Est" Click="OnFilterChanged"/>
+            <ToggleButton x:Name="ChipVnf" Style="{StaticResource Chip}" Content="VNF DT Nord-Est" Click="OnFilterChanged"/>
+            <ToggleButton x:Name="ChipActive" Style="{StaticResource Chip}" Content="Date limite à venir" IsChecked="True" Click="OnFilterChanged"/>
+            <ToggleButton x:Name="ChipUnread" Style="{StaticResource Chip}" Content="Non lus" Click="OnFilterChanged"/>
+            <ToggleButton x:Name="ChipFav" Style="{StaticResource Chip}" Content="★ Favoris" Click="OnFilterChanged"/>
+            <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock x:Name="DeadlineLabel" Text="Échéance : toutes" Width="130" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                <Slider x:Name="DeadlineSlider" Width="180" Minimum="0" Maximum="60" TickFrequency="1" IsSnapToTickEnabled="True"
+                        VerticalAlignment="Center" ValueChanged="OnDeadlineChanged"
+                        ToolTip="0 = toutes ; sinon uniquement les avis dont la date limite tombe dans les N prochains jours"/>
+            </StackPanel>
+            <TextBlock x:Name="CountText" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+        </WrapPanel>
+
+        <!-- Contenu -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="430"/>
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="ResultsGrid" Grid.Column="0" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EAEEF2"
+                      CanUserAddRows="False" CanUserSortColumns="True" RowHeaderWidth="0" BorderBrush="{StaticResource BorderBrushSoft}"
+                      Background="White" SelectionChanged="OnSelectionChanged">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRead}" Value="True"><Setter Property="FontWeight" Value="Normal"/></DataTrigger>
+                            <DataTrigger Binding="{Binding Urgency}" Value="Expired"><Setter Property="Foreground" Value="#8C959F"/></DataTrigger>
+                            <DataTrigger Binding="{Binding Urgency}" Value="J7"><Setter Property="Background" Value="#FFF1D6"/></DataTrigger>
+                            <DataTrigger Binding="{Binding Urgency}" Value="J3"><Setter Property="Background" Value="#FFE3E3"/></DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="" Binding="{Binding FavMark}" Width="26"/>
+                    <DataGridTemplateColumn Header="Objet" Width="*" SortMemberPath="Notice.Title">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock TextWrapping="Wrap" Margin="2,3" local:Highlight.Markup="{Binding TitleMarkup}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Acheteur" Binding="{Binding BuyerName}" Width="200">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Margin" Value="2,3"/></Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Dép." Binding="{Binding Department}" Width="48"/>
+                    <DataGridTextColumn Header="Publié" Binding="{Binding Published, StringFormat=dd/MM/yyyy}" Width="80" SortMemberPath="Published"/>
+                    <DataGridTextColumn Header="Date limite" Binding="{Binding Deadline, StringFormat=dd/MM/yyyy HH:mm}" Width="120" SortMemberPath="Deadline"/>
+                    <DataGridTextColumn Header="J-" Binding="{Binding DaysLeftText}" Width="48"/>
+                    <DataGridTextColumn Header="Tag" Binding="{Binding Category}" Width="80"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
+
+            <TabControl Grid.Column="2" x:Name="SideTabs">
+                <TabItem Header="Détail">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="DetailTitle" Grid.Row="0" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   Text="Sélectionnez un avis"/>
+                        <TextBlock x:Name="DetailMeta" Grid.Row="1" Margin="0,8,0,8" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"/>
+                        <WrapPanel Grid.Row="2" Margin="0,0,0,8">
+                            <Button x:Name="BtnOpen" Style="{StaticResource AccentBtn}" Content="Ouvrir l'annonce" Click="OnOpenNotice" IsEnabled="False"/>
+                            <Button x:Name="BtnDce" Style="{StaticResource Btn}" Content="Accéder au DCE" Click="OnOpenDce" IsEnabled="False"/>
+                            <Button x:Name="BtnFav" Style="{StaticResource Btn}" Content="☆ Favori" Click="OnToggleFavorite" IsEnabled="False"/>
+                            <Button x:Name="BtnRead" Style="{StaticResource Btn}" Content="Marquer non lu" Click="OnToggleRead" IsEnabled="False"/>
+                        </WrapPanel>
+                        <TextBox x:Name="DetailText" Grid.Row="3" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                 BorderThickness="1" BorderBrush="{StaticResource BorderBrushSoft}" Padding="6"/>
+                    </Grid>
+                </TabItem>
+                <TabItem x:Name="SavedTab" Header="Veilles programmées">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8"
+                                   Text="Enregistrez vos filtres récurrents ; le nombre d'avis nouveaux depuis votre dernière consultation s'affiche après chaque synchronisation."/>
+                        <ListBox x:Name="SavedList" Grid.Row="1" DisplayMemberPath="Display" MouseDoubleClick="OnApplySaved"/>
+                        <WrapPanel Grid.Row="2" Margin="0,8,0,0">
+                            <Button Style="{StaticResource AccentBtn}" Content="Enregistrer le filtre courant" Click="OnSaveSearch"/>
+                            <Button Style="{StaticResource Btn}" Content="Appliquer" Click="OnApplySaved"/>
+                            <Button Style="{StaticResource Btn}" Content="Supprimer" Click="OnDeleteSaved"/>
+                        </WrapPanel>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+
+        <!-- Synchronisation -->
+        <Border Grid.Row="3" Background="{StaticResource CardBrush}" CornerRadius="8" BorderBrush="{StaticResource BorderBrushSoft}"
+                BorderThickness="1" Padding="10" Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="220"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Source :" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="SourceCombo" Width="120" Margin="0,0,10,0"/>
+                    <TextBlock Text="Jours :" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="DaysCombo" Width="60" Margin="0,0,10,0"/>
+                </StackPanel>
+                <Button x:Name="SyncBtn" Grid.Column="1" Style="{StaticResource AccentBtn}" Content="Lancer la synchronisation" Click="OnSync"/>
+                <Button x:Name="CancelBtn" Grid.Column="2" Style="{StaticResource Btn}" Content="Annuler" Click="OnCancelSync" Visibility="Collapsed"/>
+                <ProgressBar x:Name="SyncBar" Grid.Column="3" Height="14" Minimum="0" Maximum="100" Margin="8,0,12,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="StatusText" Grid.Column="4" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           Foreground="{StaticResource MutedBrush}" Text="Prêt."/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

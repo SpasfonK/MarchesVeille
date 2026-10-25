@@ -1,0 +1,55 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Phases 1 et 2 : persistance / FTS5 (10 000 avis, < 10 ms), connecteurs, tagging VNF, CLI mockée
+      - name: Tests
+        run: dotnet test tests/MarchesVeille.Tests/MarchesVeille.Tests.csproj -c Release --logger "trx;LogFileName=results.trx"
+
+      # Phases 3 et 4 : build WPF + exécutable portable unique
+      - name: Publish exe portable
+        run: dotnet publish src/MarchesVeille.Desktop/MarchesVeille.Desktop.csproj -c Release -r win-x64 --self-contained true -o publish
+
+      # Test de fumée : l'exe démarre sans runtime installé, crée marches.db et connectors.json à côté de lui.
+      # La sortie réseau peut échouer (code 1) sans invalider le test : seule la création des fichiers compte.
+      - name: Smoke test CLI
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath ./publish/MarchesVeille.exe -ArgumentList '--scrap','--source=boamp','--days=1' -Wait -PassThru
+          Write-Host "Code de sortie : $($p.ExitCode)"
+          if (Test-Path ./publish/marches-scrap.log) { Get-Content ./publish/marches-scrap.log }
+          if (-not (Test-Path ./publish/marches.db)) { throw "marches.db non créée à côté de l'exécutable" }
+          if (-not (Test-Path ./publish/connectors.json)) { throw "connectors.json non créé" }
+          if ($p.ExitCode -eq 2) { throw "Arguments ou configuration invalides" }
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarchesVeille-win-x64
+          path: |
+            publish/MarchesVeille.exe
+            publish/connectors.json
+            publish/marches-scrap.log
+          if-no-files-found: warn
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: tests/MarchesVeille.Tests/TestResults/results.trx
+          if-no-files-found: ignore
