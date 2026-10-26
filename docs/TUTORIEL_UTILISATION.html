@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MarchesVeille — Tutoriel d'utilisation complet</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: #1f2733; line-height: 1.5; font-size: 11pt; margin: 0;
+  }
+  h1 { font-size: 22pt; margin: 0 0 4pt; color: #0b3d63; }
+  h2 {
+    font-size: 15pt; color: #0b3d63; margin: 22pt 0 6pt; padding-bottom: 3pt;
+    border-bottom: 2px solid #d7e3ee; page-break-after: avoid;
+  }
+  h3 { font-size: 12.5pt; color: #14548a; margin: 14pt 0 4pt; page-break-after: avoid; }
+  h4 { font-size: 11pt; color: #2a3b4d; margin: 10pt 0 3pt; page-break-after: avoid; }
+  p { margin: 5pt 0; }
+  ul, ol { margin: 5pt 0 5pt 0; padding-left: 18pt; }
+  li { margin: 2pt 0; }
+  code, kbd, .mono {
+    font-family: "Consolas", "Cascadia Mono", monospace; font-size: 9.5pt;
+    background: #eef3f8; padding: 1px 4px; border-radius: 3px; color: #0a3b5c;
+  }
+  pre {
+    background: #0f2233; color: #e6eef6; padding: 9pt 11pt; border-radius: 6px;
+    font-family: "Consolas", "Cascadia Mono", monospace; font-size: 9pt;
+    overflow-wrap: anywhere; white-space: pre-wrap; margin: 6pt 0; page-break-inside: avoid;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0; font-size: 9.7pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #cfdcea; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  th { background: #e8f1f9; color: #0b3d63; }
+  tr:nth-child(even) td { background: #f6fafd; }
+  .lead { color: #46586b; font-size: 11.5pt; }
+  .note, .tip, .warn {
+    border-left: 4px solid #2b7fc4; background: #eff6fc; padding: 6pt 10pt; margin: 7pt 0;
+    border-radius: 0 5px 5px 0; page-break-inside: avoid;
+  }
+  .tip { border-color: #2fa06b; background: #eefaf3; }
+  .warn { border-color: #d98b1f; background: #fdf5e7; }
+  .note strong, .tip strong, .warn strong { display: block; margin-bottom: 2pt; }
+  .cover {
+    text-align: center; padding: 40pt 0 24pt; border-bottom: 3px solid #0b3d63; margin-bottom: 10pt;
+  }
+  .cover .sub { font-size: 13pt; color: #46586b; margin-top: 6pt; }
+  .cover .badge {
+    display: inline-block; margin-top: 14pt; padding: 4pt 12pt; border-radius: 20px;
+    background: #0b3d63; color: #fff; font-size: 10pt; letter-spacing: .5px;
+  }
+  .meta { color: #6b7b8c; font-size: 9.5pt; margin-top: 10pt; }
+  .toc { margin: 8pt 0 0; }
+  .toc ol { padding-left: 20pt; }
+  .toc a { color: #14548a; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .newpage { page-break-before: always; }
+  .kbd-tag { background: #dfeaf4; border: 1px solid #bcd2e6; border-radius: 3px; padding: 0 4px; font-size: 9.3pt; }
+  .grid2 { display: flex; gap: 10pt; flex-wrap: wrap; }
+  .grid2 > div { flex: 1 1 46%; }
+  .small { font-size: 9.5pt; color: #5a6b7d; }
+  .status-ok { color: #1c7c46; font-weight: 600; }
+  .status-fail { color: #b23a3a; font-weight: 600; }
+  .status-restrict { color: #b0771a; font-weight: 600; }
+  .status-unsup { color: #6b7b8c; font-weight: 600; }
+  footer { margin-top: 24pt; padding-top: 8pt; border-top: 1px solid #d7e3ee; color: #6b7b8c; font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>MarchesVeille</h1>
+  <div class="sub">Veille de marchés publics portable, hors-ligne et anonyme</div>
+  <div class="badge">Tutoriel d'utilisation complet</div>
+  <div class="meta">Application Windows autonome · Interface graphique (WPF) + mode ligne de commande (batch)<br>
+  Recherche plein texte SQLite FTS5 · Connecteurs BOAMP / PLACE / Grand Est / profils personnalisés · Collecte anonyme des DCE</div>
+</div>
+
+<div class="toc">
+  <h3 style="margin-top:0">Sommaire</h3>
+  <ol>
+    <li><a href="#s1">Présentation et concepts</a></li>
+    <li><a href="#s2">Installation et premier lancement</a></li>
+    <li><a href="#s3">Interface principale</a></li>
+    <li><a href="#s4">La recherche plein texte (syntaxe)</a></li>
+    <li><a href="#s5">Filtres, tri, urgence et colonnes</a></li>
+    <li><a href="#s6">Fiche détaillée et actions sur un avis</a></li>
+    <li><a href="#s7">Veilles programmées</a></li>
+    <li><a href="#s8">Synchronisation des avis</a></li>
+    <li><a href="#s9">Classification automatique (Travaux / Fournitures / Services / PI)</a></li>
+    <li><a href="#s10">Qualification automatique par tag (VNF-DTNE…)</a></li>
+    <li><a href="#s11">Configuration <code>connectors.json</code> et connecteurs</a></li>
+    <li><a href="#s12">Profils de collecte DCE</a></li>
+    <li><a href="#s13">Téléchargement anonyme des DCE (parcours portail)</a></li>
+    <li><a href="#s14">Archives DCE : recherche et exploitation</a></li>
+    <li><a href="#s15">Mode ligne de commande (batch) au complet</a></li>
+    <li><a href="#s16">Planification automatique (Planificateur de tâches)</a></li>
+    <li><a href="#s17">Fichiers, emplacements et portabilité</a></li>
+    <li><a href="#s18">Anonymat et respect des plateformes</a></li>
+    <li><a href="#s19">Dépannage (FAQ)</a></li>
+    <li><a href="#s20">Raccourcis et bonnes pratiques</a></li>
+  </ol>
+</div>
+
+<h2 id="s1">1. Présentation et concepts</h2>
+<p class="lead">MarchesVeille est une application Windows <strong>autonome</strong> : un seul fichier <code>MarchesVeille.exe</code>
+sans runtime .NET à installer. Elle télécharge, dédoublonne et indexe <strong>localement</strong> les avis de marchés publics,
+puis permet de retrouver, qualifier et archiver les dossiers de consultation (DCE) — sans compte, sans cloud.</p>
+
+<h3>Flux de travail général</h3>
+<ol>
+  <li><strong>Synchroniser</strong> les avis depuis les portails (BOAMP, PLACE, Grand Est, profils personnalisés).</li>
+  <li><strong>Rechercher / filtrer</strong> dans la base locale (plein texte instantané, filtres rapides, veilles).</li>
+  <li><strong>Qualifier</strong> automatiquement : type de marché (Travaux/Fournitures/Services/PI) et tags (ex. <code>VNF-DTNE</code>).</li>
+  <li><strong>Collecter les DCE</strong> de façon <em>anonyme</em> selon des profils, et les archiver sous <code>DCE/</code>.</li>
+  <li><strong>Retrouver</strong> une archive par recherche dans les avis, les noms de fichiers et le contenu des documents.</li>
+</ol>
+
+<h3>Ce que fait l'application, en une phrase par fonction</h3>
+<ul>
+  <li><strong>Recherche plein texte</strong> FTS5 : mots, <code>"phrase exacte"</code>, <code>AND</code>/<code>OR</code>/<code>NOT</code>, insensible aux accents et à la casse, recherche instantanée.</li>
+  <li><strong>Filtres rapides</strong> : région Grand Est, tag VNF DT Nord-Est, date limite à venir, non lus, favoris, curseur d'échéance, type de marché.</li>
+  <li><strong>Signaux visuels</strong> : urgence rouge (≤ J-3), orange (≤ J-7), gris (clos), gras (non lu), marqueurs favori ★ et DCE 📦.</li>
+  <li><strong>Veilles programmées</strong> : enregistrez un jeu de filtres, l'appli compte les nouveaux avis depuis la dernière consultation.</li>
+  <li><strong>Connecteurs</strong> : BOAMP (API JSON), PLACE et Région Grand Est (HTML), plus vos profils via <code>connectors.json</code>.</li>
+  <li><strong>DCE anonyme</strong> : téléchargement sans identifiant via des parcours configurables, classement dans <code>DCE/AAAA/MM/&lt;acheteur&gt;/…</code>.</li>
+  <li><strong>Archives indexées</strong> : avis + noms de fichiers + texte des PDF/Office ; recherche avancée multi-critères.</li>
+  <li><strong>Mode batch</strong> : <code>--scrap</code> et/ou <code>--dce</code> pour l'automatiser (Planificateur de tâches).</li>
+</ul>
+
+<div class="note"><strong>Hors-ligne par conception</strong>
+Une fois les avis synchronisés et les DCE archivés, tout reste consultable sans connexion : la base SQLite
+(<code>marches.db</code>) et le dossier <code>DCE/</code> contiennent l'intégralité des données et des documents.</div>
+
+<h2 id="s2" class="newpage">2. Installation et premier lancement</h2>
+
+<h3>Obtenir l'application</h3>
+<ol>
+  <li><strong>Depuis la CI GitHub</strong> : ouvrez l'onglet <em>Actions</em> du dépôt, sélectionnez le dernier build vert,
+     puis téléchargez l'artefact <code>MarchesVeille-win-x64</code> (contient <code>MarchesVeille.exe</code>).</li>
+  <li><strong>Compilation locale</strong> (Windows + SDK .NET 8) :
+<pre><code>dotnet test   tests/MarchesVeille.Tests/MarchesVeille.Tests.csproj -c Release
+dotnet publish src/MarchesVeille.Desktop/MarchesVeille.Desktop.csproj -c Release -r win-x64 --self-contained true -o publish</code></pre>
+  Le résultat est <code>publish/MarchesVeille.exe</code> (exécutable unique auto-suffisant).</li>
+</ol>
+
+<h3>Lancement</h3>
+<ul>
+  <li><strong>Sans argument</strong> : double-cliquez <code>MarchesVeille.exe</code> → l'<strong>interface graphique</strong> s'ouvre.</li>
+  <li><strong>Avec arguments</strong> (voir §15) : l'application s'exécute en <strong>batch</strong>, sans fenêtre, et écrit dans la console et dans <code>marches-scrap.log</code>.</li>
+</ul>
+
+<h3>Fichiers créés au premier démarrage</h3>
+<table>
+  <thead><tr><th>Fichier / dossier</th><th>Rôle</th></tr></thead>
+  <tbody>
+    <tr><td><code>marches.db</code></td><td>Base SQLite (avis, index FTS5, veilles, profils DCE, index des archives).</td></tr>
+    <tr><td><code>connectors.json</code></td><td>Configuration des connecteurs, tags, classification et DCE (créé avec les valeurs par défaut).</td></tr>
+    <tr><td><code>DCE/</code></td><td>Racine des archives téléchargées (créée à la première collecte).</td></tr>
+    <tr><td><code>marches-scrap.log</code></td><td>Journal du mode batch.</td></tr>
+  </tbody>
+</table>
+
+<div class="tip"><strong>Emplacement des données</strong>
+Par défaut tout est écrit <strong>à côté de <code>MarchesVeille.exe</code></strong> (dossier portable, clé USB possible).
+Si ce dossier n'est pas inscriptible (ex. <code>C:\Program Files</code>), l'appli bascule automatiquement sur
+<code>%LOCALAPPDATA%\MarchesVeille</code>. Voir §17.</div>
+
+<div class="warn"><strong>Bibliothèque SQLite embarquée</strong>
+La bibliothèque native SQLite est incluse dans l'exécutable et extraite dans le dossier temporaire au démarrage :
+aucune installation supplémentaire n'est nécessaire.</div>
+
+<h2 id="s3" class="newpage">3. Interface principale</h2>
+<p>La fenêtre <strong>Veille Marchés Publics</strong> se compose de quatre zones :</p>
+<ul>
+  <li><strong>Barre de recherche</strong> (haut) : champ de recherche instantané + sélecteur de <strong>Tri</strong>.</li>
+  <li><strong>Filtres rapides</strong> : boutons bascules et curseurs d'affinage.</li>
+  <li><strong>Résultats</strong> (tableau à gauche) et <strong>panneau latéral à onglets</strong> (à droite : <em>Détail</em> et <em>Veilles programmées</em>).</li>
+  <li><strong>Barre de synchronisation</strong> (bas) : choix de la source, des jours, option DCE, boutons de collecte et d'archives.</li>
+</ul>
+
+<h4>Découverte guidée (première utilisation)</h4>
+<ol>
+  <li>Choisissez une <strong>Source</strong> et un nombre de <strong>Jours</strong>, puis cliquez <strong>Lancer la synchronisation</strong>.</li>
+  <li>Les avis apparaissent dans le tableau. Cliquez une ligne pour voir le <em>Détail</em> à droite (l'avis est alors marqué lu).</li>
+  <li>Tapez un mot (ex. <code>écluse</code>) dans la recherche : le tableau se filtre instantanément.</li>
+  <li>Cochez un filtre rapide (ex. <strong>Région Grand Est</strong>) pour affiner.</li>
+  <li>Enregistrez ce filtre comme <strong>veille</strong> pour suivre les nouveaux avis au fil du temps.</li>
+</ol>
+
+<h2 id="s4">4. La recherche plein texte (syntaxe)</h2>
+<p>Le champ de recherche interroge titre, description et acheteur via SQLite FTS5. La recherche est
+<strong>instantanée</strong> (débounce ~220 ms), <strong>insensible aux accents et à la casse</strong>, et tolère les requêtes mal formées
+(sans jamais planter).</p>
+
+<table>
+  <thead><tr><th>Vous tapez</th><th>Effet</th></tr></thead>
+  <tbody>
+    <tr><td><code>ecluse</code></td><td>Mots contenant « écluse » (accents ignorés) ; préfixe inclus.</td></tr>
+    <tr><td><code>travaux ecluse</code></td><td>Les deux termes (ET implicite selon la pertinence FTS).</td></tr>
+    <tr><td><code>"canal de la marne"</code></td><td>Phrase exacte ; l'ordre des mots compte.</td></tr>
+    <tr><td><code>travaux AND ecluse</code></td><td>Les deux présents.</td></tr>
+    <tr><td><code>ecluse AND NOT barrage</code></td><td>« écluse » mais pas « barrage ».</td></tr>
+    <tr><td><code>papier OR travaux</code></td><td>L'un ou l'autre.</td></tr>
+  </tbody>
+</table>
+
+<div class="tip"><strong>Accents et préfixes</strong>
+<code>ecluse</code> trouve « ÉCLUSE ». <code>eclu</code> trouve « écluse » (recherche par préfixe).</div>
+<div class="note"><strong>Requête invalide</strong>
+Des saisies comme <code>"travaux</code>, <code>(()</code>, <code>OR OR</code> ou <code>*</code> sont neutralisées : la recherche ne renvoie
+simplement rien d'anormal, sans erreur.</div>
+
+<h2 id="s5">5. Filtres, tri, urgence et colonnes</h2>
+
+<h3>Filtres rapides (boutons bascules / curseur)</h3>
+<table>
+  <thead><tr><th>Contrôle</th><th>Effet</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Région Grand Est</strong></td><td>Limite aux avis de la région Grand Est.</td></tr>
+    <tr><td><strong>VNF DT Nord-Est</strong></td><td>Limite aux avis qualifiés <code>VNF-DTNE</code> (§10).</td></tr>
+    <tr><td><strong>Date limite à venir</strong></td><td>Coché par défaut : masque les avis clos ; seuls les avis dont la date limite est future restent.</td></tr>
+    <tr><td><strong>Non lus</strong></td><td>Uniquement les avis non encore consultés.</td></tr>
+    <tr><td><strong>★ Favoris</strong></td><td>Uniquement les avis marqués favoris.</td></tr>
+    <tr><td><strong>Échéance ≤ N j</strong> (curseur 0–60)</td><td>0 = toutes ; sinon n'affiche que les avis dont la date limite tombe dans les N prochains jours.</td></tr>
+    <tr><td><strong>Type</strong> (liste)</td><td>Tous / Travaux / Fournitures / Services / PI.</td></tr>
+  </tbody>
+</table>
+<p>Les filtres se <strong>combinent</strong> entre eux et avec la recherche plein texte. Le compteur à droite indique
+« N avis » ou « X affichés sur N avis » lorsque la limite d'affichage (500) est atteinte.</p>
+
+<h3>Tri</h3>
+<ul>
+  <li><strong>Pertinence</strong> (défaut) : score FTS de la recherche texte.</li>
+  <li><strong>Plus récents</strong> : par date de publication décroissante.</li>
+  <li><strong>Échéance proche</strong> : par date limite croissante.</li>
+</ul>
+
+<h3>Colonnes du tableau et signaux visuels</h3>
+<table>
+  <thead><tr><th>Colonne</th><th>Contenu</th></tr></thead>
+  <tbody>
+    <tr><td>(vide)</td><td><strong>★</strong> si favori.</td></tr>
+    <tr><td><strong>DCE</strong></td><td><strong>📦</strong> si le DCE de cet avis est déjà archivé localement.</td></tr>
+    <tr><td><strong>Objet</strong></td><td>Titre, avec <strong>surlignage</strong> des termes recherchés.</td></tr>
+    <tr><td><strong>Acheteur</strong></td><td>Nom de l'acheteur.</td></tr>
+    <tr><td><strong>Type</strong></td><td>Travaux / Fournitures / Services, suivi de <em>PI</em> le cas échéant.</td></tr>
+    <tr><td><strong>Dép.</strong></td><td>Département.</td></tr>
+    <tr><td><strong>Publié</strong></td><td>Date de publication.</td></tr>
+    <tr><td><strong>Date limite</strong></td><td>Date et heure limites de remise.</td></tr>
+    <tr><td><strong>J-</strong></td><td>Jours restants (ex. <code>J-5</code>) ou <code>clos</code>.</td></tr>
+    <tr><td><strong>Tag</strong></td><td>Tag de qualification (ex. <code>VNF-DTNE</code>).</td></tr>
+  </tbody>
+</table>
+<div class="note"><strong>Couleurs d'urgence</strong>
+Ligne <span style="background:#FFE3E3;padding:0 4px">rouge</span> = échéance ≤ J-3 · ligne <span style="background:#FFF1D6;padding:0 4px">orange</span> = ≤ J-7 ·
+texte <span style="color:#8C959F">gris</span> = clos. Les avis <strong>non lus</strong> sont en gras. Les colonnes sont triables par clic sur l'en-tête.</div>
+
+<h2 id="s6" class="newpage">6. Fiche détaillée et actions sur un avis</h2>
+<p>Cliquez une ligne : le panneau <strong>Détail</strong> affiche le titre, les métadonnées (acheteur, référence, source, département,
+région, dates, tag) et la description. La sélection marque automatiquement l'avis comme <strong>lu</strong>.</p>
+
+<table>
+  <thead><tr><th>Bouton</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Ouvrir l'annonce</strong></td><td>Ouvre la page de l'avis dans votre navigateur (si une URL est disponible).</td></tr>
+    <tr><td><strong>Accéder au DCE</strong></td><td>Ouvre le lien direct du DCE dans le navigateur (utile quand le portail exige une identification).</td></tr>
+    <tr><td><strong>Télécharger le DCE (anonyme)</strong></td><td>Télécharge le DCE sans identification. Devient <strong>📦 Ouvrir l'archive DCE</strong> si le DCE est déjà archivé.</td></tr>
+    <tr><td><strong>☆ Favori / ★ Retirer des favoris</strong></td><td>Bascule le marquage favori (persistant).</td></tr>
+    <tr><td><strong>Marquer lu / non lu</strong></td><td>Bascule l'état de lecture.</td></tr>
+  </tbody>
+</table>
+
+<div class="note"><strong>Résultat du téléchargement DCE</strong>
+Le message d'état indique le cas : <em>archivé</em> (chemin affiché), <em>accès restreint</em> (une boîte propose d'utiliser
+« Accéder au DCE »), ou <em>échec</em> (motif affiché). Voir §13 pour les statuts.</div>
+
+<h2 id="s7">7. Veilles programmées</h2>
+<p>Onglet <strong>Veilles programmées</strong> : enregistrez des jeux de filtres récurrents. Après chaque synchronisation,
+l'application calcule le <strong>nombre de nouveaux avis</strong> depuis votre dernière consultation.</p>
+<ol>
+  <li>Configurez recherche + filtres (ex. « VNF travaux », région Grand Est).</li>
+  <li>Cliquez <strong>Enregistrer le filtre courant</strong> et donnez un nom.</li>
+  <li>La liste affiche <code>Nom · N nouveau(x)</code>. Un compteur apparaît aussi dans l'onglet : <em>Veilles programmées (N)</em>.</li>
+</ol>
+<ul>
+  <li><strong>Appliquer</strong> (ou double-clic) : réapplique les filtres, relance la recherche et remet à zéro le compteur de nouveautés.</li>
+  <li><strong>Supprimer</strong> : retire la veille.</li>
+</ul>
+
+<h2 id="s8">8. Synchronisation des avis</h2>
+<p>Barre du bas :</p>
+<ul>
+  <li><strong>Source</strong> : <code>all</code> ou un connecteur précis (<code>boamp</code>, <code>place</code>, <code>grandest</code>, ou un id personnalisé).</li>
+  <li><strong>Jours</strong> : 1, 3, 7, 14 ou 31 (période de parution prise en compte).</li>
+  <li><strong>puis télécharger les DCE</strong> : après la synchronisation, lance la collecte anonyme des DCE selon les profils actifs.</li>
+  <li><strong>Lancer la synchronisation</strong> / <strong>Annuler</strong> : progression affichée source par source ; annulation immédiate possible.</li>
+</ul>
+<p>En fin de synchronisation, un récapitulatif s'affiche (récupérés / nouveaux / doublons par source). Si une source
+échoue, une alerte liste les erreurs mais les autres sources restent ingérées. Après une synchronisation, les résultats
+et les compteurs de veilles sont rafraîchis automatiquement.</p>
+
+<div class="tip"><strong>Dédoublonnage</strong>
+Un avis est identifié de façon stable par <code>source + référence</code> (empreinte SHA-256). Un avis déjà connu est
+<strong>mis à jour</strong> (nouveau titre, nouvelle échéance) sans perdre vos marques <em>favori</em> et <em>lu</em>.</div>
+
+<h2 id="s9">9. Classification automatique (Travaux / Fournitures / Services / PI)</h2>
+<p>Chaque avis reçoit un <strong>type de marché</strong> :</p>
+<ul>
+  <li>Si la source le fournit (ex. BOAMP <code>type_marche</code>), cette valeur prime.</li>
+  <li>Sinon, il est <strong>déduit</strong> des motifs de la section <code>classification</code> de <code>connectors.json</code> (mots-clés « travaux », « fourniture », « services »…).</li>
+  <li>Une <strong>PI</strong> (prestation intellectuelle : études, maîtrise d'œuvre, AMO, audit, diagnostic, ingénierie…) est
+      marquée <code>IsPi = true</code> et <strong>comptée aussi comme Service</strong>.</li>
+</ul>
+<p>Le type apparaît dans la colonne <strong>Type</strong> (ex. <code>Travaux · PI</code>) et sert de filtre (interface, profils DCE, recherche avancée des archives).</p>
+<div class="tip"><strong>Adapter le vocabulaire</strong>
+Éditez les listes <code>travaux</code>, <code>fournitures</code>, <code>services</code>, <code>pi</code> dans <code>connectors.json</code>
+(motifs sur texte sans accents, minuscules). Aucune recompilation : relancez l'application.</div>
+
+<h2 id="s10">10. Qualification automatique par tag (VNF-DTNE…)</h2>
+<p>Les <code>taggingRules</code> posent un <strong>tag</strong> (<code>buyer_category</code>) sur les avis, par exemple <code>VNF-DTNE</code>.
+La <strong>première règle</strong> qui correspond l'emporte. Les motifs sont des expressions régulières appliquées à un texte
+<strong>sans accents et en minuscules</strong>.</p>
+
+<pre><code>{ "category": "VNF-DTNE",
+  "buyerPatterns": ["voies navigables de france", "\\bvnf\\b"],
+  "textPatterns":  ["direction territoriale nord[- ]?est", "\\bdtne\\b"],
+  "sirets": ["13001840000012"] }</code></pre>
+<ul>
+  <li><code>buyerPatterns</code> / <code>sirets</code> : l'acheteur doit correspondre (si les deux sont vides, seul le texte est testé).</li>
+  <li><code>textPatterns</code> : au moins un motif sur acheteur + titre + description.</li>
+  <li>Dans le JSON, doublez les antislashs : <code>\\b</code>, <code>\\d</code>.</li>
+</ul>
+<p>Le tag alimente la colonne <strong>Tag</strong>, le filtre <strong>VNF DT Nord-Est</strong> et les profils de collecte.</p>
+
+<h2 id="s11" class="newpage">11. Configuration <code>connectors.json</code> et connecteurs</h2>
+<p>Le fichier est créé à côté de l'exécutable au premier lancement, <strong>relu à chaque démarrage</strong> : modifiez-le,
+relancez l'application, aucune recompilation. Les commentaires <code>//</code> et virgules finales sont tolérés.
+JSON invalide → la GUI prévient et utilise les valeurs par défaut ; la CLI s'arrête avec le code <code>2</code>.</p>
+
+<h3>Clés principales</h3>
+<table>
+  <thead><tr><th>Clé</th><th>Rôle</th></tr></thead>
+  <tbody>
+    <tr><td><code>userAgent</code>, <code>requestDelayMs</code>, <code>maxRetries</code></td><td>Politesse réseau : identité, pause entre requêtes, reprises sur erreurs (429/5xx/réseau).</td></tr>
+    <tr><td><code>taggingRules</code></td><td>Qualification automatique par tag (§10).</td></tr>
+    <tr><td><code>boamp</code></td><td>API BOAMP : filtres de conservation (départements, acheteurs).</td></tr>
+    <tr><td><code>place</code>, <code>grandEst</code></td><td>Connecteurs HTML (formulaire de recherche + tableau de résultats).</td></tr>
+    <tr><td><code>customConnectors</code></td><td>Vos profils acheteurs supplémentaires (même format que <code>place</code>).</td></tr>
+    <tr><td><code>classification</code></td><td>Motifs Travaux/Fournitures/Services/PI (§9).</td></tr>
+    <tr><td><code>dce</code></td><td>Réglages de la collecte des DCE (§12).</td></tr>
+  </tbody>
+</table>
+
+<h3>Ajouter un profil acheteur sans recompiler</h3>
+<p>Ajoutez un objet dans <code>customConnectors</code> (un exemple désactivé est fourni) :</p>
+<pre><code>{
+  "id": "mon-profil", "name": "Mon profil acheteur", "enabled": true,
+  "baseUrl": "https://profil.example.org/",
+  "searchUrl": "consultations/recherche",
+  "formSelector": "form#recherche",
+  "formFields": { "dateDebut": "{dateStart}", "dateFin": "{dateEnd}" },
+  "submitName": "rechercher",
+  "dateFormat": "dd/MM/yyyy",
+  "rowSelector": "table#resultats tbody tr",
+  "fields": {
+    "reference": "td.ref", "title": "td.objet a", "buyer": "td.acheteur",
+    "department": "td.dept", "deadline": "td.cloture",
+    "url": "td.objet a@href", "dce": "td.dce a@href"
+  },
+  "paging": { "mode": "link", "nextSelector": "a.suivant" },
+  "defaultRegion": "Grand Est",
+  "keepBuyerPatterns": []
+}</code></pre>
+<p>Le nouvel identifiant (<code>mon-profil</code>) apparaît dans la liste des <strong>Sources</strong> et s'utilise en CLI : <code>--source=mon-profil</code>.</p>
+
+<h4>Détail des champs d'un connecteur HTML</h4>
+<ul>
+  <li><code>searchUrl</code> : relatif à <code>baseUrl</code> (ou absolu) ; la page doit contenir le formulaire de recherche.</li>
+  <li><code>formSelector</code> : sélecteur CSS du formulaire ; tous ses champs (champs cachés <code>PRADO_PAGESTATE</code>, <code>__VIEWSTATE</code>…) sont repris automatiquement.</li>
+  <li><code>formFields</code> : champs à forcer (nom → valeur). Jetons : <code>{dateStart}</code>, <code>{dateEnd}</code> (selon <code>dateFormat</code>), <code>{isoStart}</code>, <code>{isoEnd}</code>.
+      La période couvre <code>--days</code> jours, aujourd'hui inclus.</li>
+  <li><code>submitName</code> : nom du bouton de recherche. Si <code>postbackTargetField</code> est renseigné (ex. <code>PRADO_POSTBACK_TARGET</code>),
+      la valeur est postée dans ce champ (postback Prado) ; sinon <code>submitName=1</code> est posté comme un bouton.</li>
+  <li><code>rowSelector</code> : une ligne de résultat. <code>fields</code> : <code>"sélecteur CSS"</code> (texte) ou <code>"sélecteur CSS@attribut"</code> (ex. <code>a@href</code>).
+      Clés reconnues : <code>reference</code>, <code>title</code>, <code>description</code>, <code>buyer</code>, <code>department</code>, <code>publication</code>, <code>deadline</code>, <code>url</code>, <code>dce</code>.</li>
+  <li><code>paging.mode</code> : <code>none</code>, <code>link</code> (suit le <code>href</code> de <code>nextSelector</code>) ou <code>postback</code> (reposte le formulaire).
+      Arrêt automatique quand une page n'apporte aucun nouvel avis ou que <code>maxPages</code> est atteint.</li>
+  <li><code>keepBuyerPatterns</code> : si non vide, seuls les avis dont l'acheteur correspond sont conservés (filtre côté client).</li>
+  <li>Les dates sont lues en <strong>heure de Paris</strong> et stockées en <strong>UTC</strong>.</li>
+</ul>
+
+<h4>BOAMP</h4>
+<ul>
+  <li><code>keepDepartments</code> / <code>keepBuyerPatterns</code> : un avis est conservé s'il est dans un de ces départements <em>ou</em> si l'acheteur correspond
+      (par défaut : Grand Est + VNF). Les deux listes vides = tout conserver.</li>
+  <li><code>extraWhere</code> : clause ODSQL ajoutée côté serveur (optionnel).</li>
+  <li>Requête paginée par jour de parution ; la limite Opendatasoft (offset + limit ≤ 10 000) est respectée.</li>
+</ul>
+
+<div class="warn"><strong>Sélecteurs PLACE / Grand Est à valider</strong>
+Les sélecteurs et noms de champs fournis pour <code>place</code> et <code>grandEst</code> sont des <strong>valeurs de départ non vérifiées</strong>
+sur les sites réels. Le connecteur <strong>BOAMP (API JSON)</strong> est le plus fiable et couvre déjà une grande partie des avis PLACE et VNF.</div>
+
+<h4>Trouver les bons sélecteurs</h4>
+<ol>
+  <li>Ouvrez le portail, outils de développement (F12), onglet <strong>Réseau</strong>.</li>
+  <li>Lancez une recherche : repérez la requête POST et les noms de champs envoyés → <code>formFields</code>, <code>submitName</code>.</li>
+  <li>Onglet <strong>Éléments</strong> : clic droit sur une ligne de résultat → Copier → sélecteur CSS → <code>rowSelector</code>, puis <code>fields</code>.</li>
+  <li>Testez : <code>MarchesVeille.exe --scrap --source=mon-profil --days=1</code> puis lisez <code>marches-scrap.log</code>.</li>
+</ol>
+
+<h2 id="s12" class="newpage">12. Profils de collecte DCE</h2>
+<p>Bouton <strong>Collecte DCE…</strong> : fenêtre de gestion des profils qui déterminent <em>quels</em> DCE télécharger.</p>
+
+<h3>Critères d'un profil</h3>
+<p>Un avis est retenu s'il satisfait <strong>tous</strong> les critères renseignés d'un profil <strong>actif</strong>
+(un critère multiple est satisfait par l'un de ses éléments) :</p>
+<ul>
+  <li><strong>Mots-clés</strong> (objet, description, acheteur) et <strong>mots-clés à exclure</strong> (un par ligne) ;</li>
+  <li><strong>Organisations</strong> (fragment de nom, ex. « voies navigables ») ;</li>
+  <li><strong>Types de marché</strong> : Travaux / Fournitures / Services / PI (aucun coché = tous) ;</li>
+  <li><strong>Régions</strong> (ex. Grand Est) et <strong>Tags</strong> (ex. <code>VNF-DTNE</code>).</li>
+</ul>
+<div class="note"><strong>Règles clés</strong>
+Un profil <strong>sans aucun critère télécharge tout</strong>. Les profils sont stockés dans <code>marches.db</code>.
+Plusieurs profils actifs se cumulent (<strong>OU</strong>). En ligne de commande, <code>--dce-all</code> ignore les profils.</div>
+
+<h3>Fenêtre « Collecte des DCE »</h3>
+<ul>
+  <li>Liste des profils à gauche (<code>●</code> actif / <code>○</code> inactif, mention « (tout) » si sans critère) ; <strong>Nouveau</strong>, <strong>Supprimer</strong>.</li>
+  <li>Éditeur à droite : nom, case « Profil actif », champs de critères, bouton <strong>Enregistrer le profil</strong>.</li>
+  <li>Bas : <strong>Avis publiés depuis N jours</strong> (15/31/45/90/180/365),
+      <strong>Réessayer les accès restreints / non pris en charge</strong>, <strong>Mode diagnostic</strong>,
+      bouton <strong>Lancer la collecte</strong> (et <strong>Annuler</strong>), barre de progression et journal détaillé.</li>
+</ul>
+
+<h3>Réglages de collecte (<code>connectors.json</code>, section <code>dce</code>)</h3>
+<table>
+  <thead><tr><th>Clé</th><th>Rôle</th></tr></thead>
+  <tbody>
+    <tr><td><code>folder</code></td><td>Dossier des archives (relatif à l'exe, ou absolu). Défaut : <code>DCE</code>.</td></tr>
+    <tr><td><code>maxFileSizeMb</code></td><td>Taille maximale d'un DCE (au-delà : échec, rien n'est conservé). Défaut 500.</td></tr>
+    <tr><td><code>maxPerRun</code></td><td>Nombre maximal de DCE par exécution ; le reste est repris au lancement suivant. Défaut 300.</td></tr>
+    <tr><td><code>delayMs</code></td><td>Pause entre deux téléchargements. Défaut 1500 ms.</td></tr>
+    <tr><td><code>maxAttempts</code></td><td>Tentatives avant abandon d'un DCE en échec. Défaut 3.</td></tr>
+    <tr><td><code>publishedWithinDays</code></td><td>Seuls les avis publiés depuis N jours sont candidats. Défaut 45.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s13">13. Téléchargement anonyme des DCE (parcours portail)</h2>
+<p>Chaque connecteur HTML décrit, dans sa section <code>dce</code>, comment atteindre le fichier <strong>anonymement</strong>,
+sous forme d'<strong>étapes exécutées dans une même session</strong> :</p>
+<pre><code>"dce": {
+  "enabled": true,
+  "steps": [
+    { "type": "get",  "url": "{dceUrl}" },
+    { "type": "link", "selector": "a[href*='TelechargementDce']" },
+    { "type": "form", "formSelector": "form", "fields": { "choix": "anonyme" },
+      "submitName": "valider", "postbackTargetField": "PRADO_POSTBACK_TARGET", "optional": true },
+    { "type": "link", "selector": "a[href*='DownloadCompleteDce']" }
+  ],
+  "restrictedPatterns": ["identifiez-vous", "mot de passe"]
+}</code></pre>
+<ul>
+  <li><code>get</code> : ouvre une URL (<code>{dceUrl}</code> = lien du DCE s'il est connu, sinon <code>{noticeUrl}</code> = page de l'avis).</li>
+  <li><code>link</code> : suit le premier lien correspondant au sélecteur CSS de la page courante.</li>
+  <li><code>form</code> : soumet un formulaire de la page courante (champs cachés repris, <code>fields</code> forcés).
+      <strong>Aucune coordonnée n'est envoyée</strong> : seuls les champs que vous configurez le sont.</li>
+  <li><code>optional</code> : l'étape est ignorée si l'élément est absent. Le parcours s'arrête dès qu'une réponse est un fichier (zip, pdf…).</li>
+  <li>Sans <code>steps</code>, le lien <code>{dceUrl}</code> est téléchargé directement.</li>
+  <li>Si le parcours finit sur une page HTML contenant un des <code>restrictedPatterns</code>, l'archive est marquée <strong>restricted</strong>.</li>
+  <li>Un avis BOAMP est traité par le connecteur dont l'adresse correspond à l'URL du DCE trouvée dans l'avis.</li>
+</ul>
+
+<h3>Rangement et statuts</h3>
+<p>Les archives sont rangées sous <code>DCE/AAAA/MM/&lt;acheteur&gt;/&lt;référence&gt;_&lt;objet&gt;.zip</code>.</p>
+<table>
+  <thead><tr><th>Statut</th><th>Signification</th></tr></thead>
+  <tbody>
+    <tr><td class="status-ok">ok</td><td>Téléchargé et archivé.</td></tr>
+    <tr><td class="status-fail">failed</td><td>Échec ; réessayé jusqu'à <code>maxAttempts</code>.</td></tr>
+    <tr><td class="status-restrict">restricted</td><td>Identification ou inscription exigée ; <em>non</em> retenté sauf option dédiée.</td></tr>
+    <tr><td class="status-unsup">unsupported</td><td>Aucun connecteur pour ce portail ; <em>non</em> retenté sauf option dédiée.</td></tr>
+  </tbody>
+</table>
+<p><code>restricted</code> et <code>unsupported</code> ne sont retentés qu'avec l'option <strong>« Réessayer les accès restreints / non pris en charge »</strong>
+(interface) ou <code>--dce-retry</code> (CLI).</p>
+
+<div class="tip"><strong>Mode diagnostic</strong>
+Cochez <strong>Mode diagnostic</strong> (ou <code>--dce-debug</code>) : les pages HTML de chaque étape sont sauvegardées dans
+<code>DCE/_diagnostic/&lt;avis&gt;/etapeN.html</code>. Ouvrez-les pour corriger sélecteurs et noms de champs, relancez, jusqu'à obtenir un zip.</div>
+
+<h3>Usage typique</h3>
+<ul>
+  <li>Interface : Jours = 31, case <strong>puis télécharger les DCE</strong>, <strong>Lancer la synchronisation</strong>.</li>
+  <li>CLI : <code>MarchesVeille.exe --scrap --days=31 --dce</code>.</li>
+</ul>
+
+<h2 id="s14" class="newpage">14. Archives DCE : recherche et exploitation</h2>
+<p>Bouton <strong>Archives DCE…</strong> : interroge l'index des archives <strong>sans limite de date de récupération</strong>.</p>
+
+<h3>Barre de recherche + « Chercher dans »</h3>
+<ul>
+  <li>Mêmes mots, <code>"phrase exacte"</code>, <code>AND</code>/<code>OR</code>/<code>NOT</code>, insensible aux accents et à la casse.</li>
+  <li><strong>Chercher dans</strong> : <em>Tout</em>, <em>Avis</em> (objet, acheteur, référence), <em>Noms de fichiers</em>, <em>Contenu des documents</em>.</li>
+</ul>
+
+<h3>Recherche avancée</h3>
+<ul>
+  <li>Organisation, Référence, Type (Travaux/Fournitures/Services/PI), Région (Toutes/Grand Est).</li>
+  <li>Dates de publication (du / au) et dates de récupération (du / au).</li>
+  <li>Tri : Pertinence, Publiés récemment, Récupérés récemment. Bouton <strong>Réinitialiser</strong>.</li>
+</ul>
+
+<h3>Tableau et panneau de détail</h3>
+<ul>
+  <li>Colonnes : Publié, Acheteur, Objet (surligné), Type, Fichiers (nombre), Taille, Récupéré.</li>
+  <li>Détail : métadonnées, <strong>extrait de contenu surligné</strong>, et <strong>liste des fichiers</strong> contenus dans l'archive.</li>
+  <li>Actions : <strong>Ouvrir l'archive</strong> (double-clic aussi), <strong>Afficher dans le dossier</strong> (sélectionne le fichier dans l'Explorateur), <strong>Ouvrir l'avis</strong>.</li>
+</ul>
+
+<div class="note"><strong>Contenu indexé</strong>
+PDF avec couche texte, Word (docx), Excel (xlsx), PowerPoint (pptx), LibreOffice (odt/ods/odp), txt/csv/xml/html,
+et <strong>zips imbriqués (2 niveaux)</strong>. Les <strong>PDF scannés</strong> (images) ne sont pas lisibles : seuls leurs noms de fichiers sont indexés
+(pas d'OCR). Les archives restent trouvables même si l'avis a disparu de la base : l'index copie les informations de l'avis.</div>
+
+<h2 id="s15">15. Mode ligne de commande (batch) au complet</h2>
+<pre><code>MarchesVeille.exe --scrap [--source=all|boamp|place|grandest|&lt;id&gt;[,&lt;id&gt;...]] [--days=3]
+                  [--dce] [--dce-all] [--dce-debug] [--dce-days=45] [--dce-max=300] [--dce-retry]
+MarchesVeille.exe --dce-only [--dce-all] [--dce-debug] ...
+MarchesVeille.exe --help
+
+Options communes : [--db=&lt;marches.db&gt;] [--config=&lt;connectors.json&gt;]</code></pre>
+
+<table>
+  <thead><tr><th>Option</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>--scrap</code></td><td>Synchronise les avis depuis les sources.</td></tr>
+    <tr><td><code>--source=…</code></td><td>Source(s) : <code>all</code> (défaut), <code>boamp</code>, <code>place</code>, <code>grandest</code>, ou un id personnalisé ; plusieurs ids séparés par des virgules.</td></tr>
+    <tr><td><code>--days=N</code></td><td>Période de parution en jours (1 à 90 ; défaut 3).</td></tr>
+    <tr><td><code>--dce</code></td><td>Après la synchronisation, télécharge anonymement les DCE retenus par les profils actifs.</td></tr>
+    <tr><td><code>--dce-only</code></td><td>Collecte des DCE <strong>sans</strong> synchroniser les avis.</td></tr>
+    <tr><td><code>--dce-all</code></td><td>Ignore les profils : télécharge tous les DCE candidats.</td></tr>
+    <tr><td><code>--dce-debug</code></td><td>Sauvegarde les pages HTML de chaque étape dans <code>DCE/_diagnostic</code>.</td></tr>
+    <tr><td><code>--dce-days=N</code></td><td>Fenêtre de publication des candidats (1 à 3650 ; défaut : <code>connectors.json</code>, 45).</td></tr>
+    <tr><td><code>--dce-max=N</code></td><td>Nombre maximal de DCE par exécution (défaut : <code>connectors.json</code>, 300).</td></tr>
+    <tr><td><code>--dce-retry</code></td><td>Réessaie aussi les DCE « accès restreint » ou « non pris en charge ».</td></tr>
+    <tr><td><code>--db=…</code></td><td>Chemin de la base (défaut : <code>marches.db</code> à côté de l'exe).</td></tr>
+    <tr><td><code>--config=…</code></td><td>Chemin de la configuration (défaut : <code>connectors.json</code> à côté de l'exe).</td></tr>
+    <tr><td><code>--help</code> / <code>-h</code></td><td>Affiche l'aide.</td></tr>
+  </tbody>
+</table>
+
+<h4>Codes de sortie</h4>
+<table>
+  <thead><tr><th>Code</th><th>Signification</th></tr></thead>
+  <tbody>
+    <tr><td><code>0</code></td><td>Succès.</td></tr>
+    <tr><td><code>1</code></td><td>Au moins une source ou un téléchargement en erreur (les autres sont traités).</td></tr>
+    <tr><td><code>2</code></td><td>Arguments ou configuration invalides (ex. <code>--days=0</code>, JSON invalide).</td></tr>
+  </tbody>
+</table>
+
+<h4>Exemples</h4>
+<pre><code># Veille quotidienne (3 derniers jours, toutes les sources)
+MarchesVeille.exe --scrap --source=all --days=3
+
+# Collecte mensuelle des avis et des DCE
+MarchesVeille.exe --scrap --days=31 --dce
+
+# Reprendre uniquement la collecte des DCE restants
+MarchesVeille.exe --dce-only
+
+# Diagnostic des sélecteurs sur quelques DCE
+MarchesVeille.exe --dce-only --dce-all --dce-max=3 --dce-debug</code></pre>
+<p>Le journal est écrit dans <code>marches-scrap.log</code> à côté de la base (et affiché dans la console si elle est attachée).</p>
+
+<h2 id="s16">16. Planification automatique (Planificateur de tâches)</h2>
+<ol>
+  <li>Ouvrez le <strong>Planificateur de tâches</strong> Windows → Créer une tâche.</li>
+  <li><strong>Action</strong> : Démarrer un programme → <code>MarchesVeille.exe</code>.</li>
+  <li><strong>Arguments</strong> : <code>--scrap --source=all --days=3</code> (quotidien) ou <code>--scrap --days=31 --dce</code> (mensuel).</li>
+  <li><strong>Déclencheur</strong> : quotidien/hebdomadaire/mensuel selon votre besoin.</li>
+</ol>
+<div class="tip"><strong>Bon réflexe</strong>
+Cochez « Exécuter même si l'utilisateur n'est pas connecté » si la tâche doit tourner sans session ouverte.
+Le code de sortie et le journal <code>marches-scrap.log</code> permettent de surveiller l'exécution.</div>
+
+<h2 id="s17" class="newpage">17. Fichiers, emplacements et portabilité</h2>
+<table>
+  <thead><tr><th>Élément</th><th>Emplacement</th></tr></thead>
+  <tbody>
+    <tr><td>Application</td><td><code>MarchesVeille.exe</code> (autonome, aucun runtime requis).</td></tr>
+    <tr><td>Base de données</td><td><code>marches.db</code> (avis, index FTS5, veilles, profils, index archives).</td></tr>
+    <tr><td>Configuration</td><td><code>connectors.json</code> (connecteurs, tags, classification, DCE).</td></tr>
+    <tr><td>Archives DCE</td><td><code>DCE/AAAA/MM/&lt;acheteur&gt;/…</code>.</td></tr>
+    <tr><td>Journal batch</td><td><code>marches-scrap.log</code>.</td></tr>
+    <tr><td>Repli si dossier non inscriptible</td><td><code>%LOCALAPPDATA%\MarchesVeille</code>.</td></tr>
+  </tbody>
+</table>
+<div class="note"><strong>Portabilité totale</strong>
+Copiez <code>MarchesVeille.exe</code>, <code>marches.db</code>, <code>connectors.json</code> et le dossier <code>DCE/</code> sur une clé USB :
+l'application fonctionne à l'identique, hors-ligne, sans rien réinstaller. Pour sauvegarder, copiez simplement <code>marches.db</code> et <code>DCE/</code>.</div>
+
+<h2 id="s18">18. Anonymat et respect des plateformes</h2>
+<ul>
+  <li>Un téléchargement <strong>anonyme</strong> reste visible de l'acheteur dans les statistiques de la plateforme (nombre de retraits), <strong>sans nom</strong>.</li>
+  <li>Respectez les conditions d'utilisation : gardez des pauses raisonnables (<code>delayMs</code>, <code>requestDelayMs</code>) et des volumes mesurés (<code>maxPerRun</code>).</li>
+  <li>Pour une consultation sous le seuil de publicité obligatoire ou réservée, le portail peut exiger une inscription : l'archive sera
+      <strong>restricted</strong> et le bouton <strong>Accéder au DCE</strong> vous permet de la récupérer dans votre navigateur.</li>
+  <li>Aucune donnée n'est envoyée à un serveur tiers : tout est traité et stocké en local.</li>
+</ul>
+
+<h2 id="s19">19. Dépannage (FAQ)</h2>
+<table>
+  <thead><tr><th>Symptôme</th><th>Cause probable / solution</th></tr></thead>
+  <tbody>
+    <tr><td>Aucun résultat après synchronisation</td><td>Élargir <code>Jours</code> ou <code>--days</code> ; décocher des filtres (p. ex. « Date limite à venir ») ; vérifier <code>keepDepartments</code>/<code>keepBuyerPatterns</code> du BOAMP.</td></tr>
+    <tr><td>Une source échoue (code 1)</td><td>Sélecteurs PLACE/Grand Est non validés (valeurs de départ). Consulter <code>marches-scrap.log</code> et corriger <code>connectors.json</code>. Le BOAMP reste fiable.</td></tr>
+    <tr><td>DCE « accès restreint »</td><td>Le portail exige une identification : utiliser <strong>Accéder au DCE</strong> dans le navigateur, ou <code>--dce-retry</code> après inscription.</td></tr>
+    <tr><td>DCE « non pris en charge »</td><td>Aucun connecteur pour ce portail : ajouter une section <code>dce</code> (parcours) au connecteur concerné.</td></tr>
+    <tr><td>Parcours DCE échoue (lien introuvable)</td><td>Activer le <strong>Mode diagnostic</strong> / <code>--dce-debug</code> et corriger les sélecteurs d'étapes.</td></tr>
+    <tr><td>PDF non trouvé dans une archive</td><td>Les PDF scannés (images) ne sont pas indexés (pas d'OCR) : rechercher par nom de fichier.</td></tr>
+    <tr><td>« connectors.json invalide »</td><td>La GUI utilise les valeurs par défaut ; la CLI s'arrête (code 2). Corriger le JSON (les commentaires <code>//</code> sont tolérés).</td></tr>
+    <tr><td>Dossier non inscriptible (ex. Program Files)</td><td>Les données basculent dans <code>%LOCALAPPDATA%\MarchesVeille</code>. Placez l'exe dans un dossier utilisateur pour rester portable.</td></tr>
+    <tr><td>Réinitialiser le compteur de nouveautés d'une veille</td><td><strong>Appliquer</strong> la veille (met à jour la dernière consultation).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s20">20. Raccourcis et bonnes pratiques</h2>
+<ul>
+  <li><strong>Entrée</strong> dans la recherche : relance immédiatement (sans attendre le débounce).</li>
+  <li><strong>Double-clic</strong> sur une veille : l'applique. <strong>Double-clic</strong> sur une archive : l'ouvre.</li>
+  <li>Utilisez le <strong>Tri « Échéance proche »</strong> pour traiter les urgences en premier.</li>
+  <li>Enregistrez des veilles par thème (VNF travaux, Grand Est fournitures, PI études) plutôt qu'une seule veille fourre-tout.</li>
+  <li>Pour la collecte DCE, préférez des <strong>profils ciblés</strong> à « tout télécharger », pour limiter le volume et rester courtois.</li>
+  <li>Faites une <strong>sauvegarde périodique</strong> de <code>marches.db</code> et <code>DCE/</code>.</li>
+  <li>Sur une nouvelle version, remplacez l'exe ; la base et la configuration sont conservées.</li>
+</ul>
+
+<footer>
+  MarchesVeille — Tutoriel d'utilisation complet. Document généré pour l'application ; voir aussi
+  <code>README.md</code> et <code>docs/GUIDE_CONNECTORS.md</code> pour les détails de configuration des connecteurs.
+  Les sélecteurs PLACE / Grand Est fournis sont des valeurs de départ à valider sur les sites réels.
+</footer>
+
+</body>
+</html>
