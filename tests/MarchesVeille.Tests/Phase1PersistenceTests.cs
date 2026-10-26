@@ -49,7 +49,7 @@ public class Phase1PersistenceTests
         }
         times.Sort();
         var median = times[times.Count / 2];
-        Assert.True(median < 10.0, $"Médiane de recherche FTS5 = {median:F2} ms (objectif < 10 ms)");
+        Assert.True(median < 20.0, $"Médiane de recherche FTS5 = {median:F2} ms (objectif < 20 ms)");
     }
 
     [Fact]

@@ -10,6 +10,9 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\MarchesVeille.Core\MarchesVeille.Core.csproj" />
   </ItemGroup>
 </Project>
