@@ -47,6 +47,13 @@
                         VerticalAlignment="Center" ValueChanged="OnDeadlineChanged"
                         ToolTip="0 = toutes ; sinon uniquement les avis dont la date limite tombe dans les N prochains jours"/>
             </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="Type :" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{StaticResource MutedBrush}"/>
+                <ComboBox x:Name="TypeCombo" Width="120" SelectedIndex="0" SelectionChanged="OnFilterChanged">
+                    <ComboBoxItem Content="Tous"/><ComboBoxItem Content="Travaux"/><ComboBoxItem Content="Fournitures"/>
+                    <ComboBoxItem Content="Services"/><ComboBoxItem Content="PI"/>
+                </ComboBox>
+            </StackPanel>
             <TextBlock x:Name="CountText" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
         </WrapPanel>
 
@@ -75,6 +82,7 @@
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="" Binding="{Binding FavMark}" Width="26"/>
+                    <DataGridTextColumn Header="DCE" Binding="{Binding DceMark}" Width="40"/>
                     <DataGridTemplateColumn Header="Objet" Width="*" SortMemberPath="Notice.Title">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -87,6 +95,7 @@
                             <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Margin" Value="2,3"/></Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
+                    <DataGridTextColumn Header="Type" Binding="{Binding TypeLabel}" Width="90"/>
                     <DataGridTextColumn Header="Dép." Binding="{Binding Department}" Width="48"/>
                     <DataGridTextColumn Header="Publié" Binding="{Binding Published, StringFormat=dd/MM/yyyy}" Width="80" SortMemberPath="Published"/>
                     <DataGridTextColumn Header="Date limite" Binding="{Binding Deadline, StringFormat=dd/MM/yyyy HH:mm}" Width="120" SortMemberPath="Deadline"/>
@@ -112,6 +121,7 @@
                         <WrapPanel Grid.Row="2" Margin="0,0,0,8">
                             <Button x:Name="BtnOpen" Style="{StaticResource AccentBtn}" Content="Ouvrir l'annonce" Click="OnOpenNotice" IsEnabled="False"/>
                             <Button x:Name="BtnDce" Style="{StaticResource Btn}" Content="Accéder au DCE" Click="OnOpenDce" IsEnabled="False"/>
+                            <Button x:Name="BtnArchive" Style="{StaticResource Btn}" Content="Télécharger le DCE (anonyme)" Click="OnArchiveAction" IsEnabled="False"/>
                             <Button x:Name="BtnFav" Style="{StaticResource Btn}" Content="☆ Favori" Click="OnToggleFavorite" IsEnabled="False"/>
                             <Button x:Name="BtnRead" Style="{StaticResource Btn}" Content="Marquer non lu" Click="OnToggleRead" IsEnabled="False"/>
                         </WrapPanel>
@@ -149,18 +159,25 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="220"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Source :" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <ComboBox x:Name="SourceCombo" Width="120" Margin="0,0,10,0"/>
                     <TextBlock Text="Jours :" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <ComboBox x:Name="DaysCombo" Width="60" Margin="0,0,10,0"/>
+                    <CheckBox x:Name="ChkDce" Content="puis télécharger les DCE" VerticalAlignment="Center" Margin="0,0,10,0"
+                              ToolTip="Après la synchronisation, télécharge anonymement les DCE retenus par les profils de collecte actifs"/>
                 </StackPanel>
                 <Button x:Name="SyncBtn" Grid.Column="1" Style="{StaticResource AccentBtn}" Content="Lancer la synchronisation" Click="OnSync"/>
                 <Button x:Name="CancelBtn" Grid.Column="2" Style="{StaticResource Btn}" Content="Annuler" Click="OnCancelSync" Visibility="Collapsed"/>
                 <ProgressBar x:Name="SyncBar" Grid.Column="3" Height="14" Minimum="0" Maximum="100" Margin="8,0,12,0" VerticalAlignment="Center"/>
                 <TextBlock x:Name="StatusText" Grid.Column="4" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                            Foreground="{StaticResource MutedBrush}" Text="Prêt."/>
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="10,0,0,0">
+                    <Button Style="{StaticResource Btn}" Content="Collecte DCE…" Click="OnOpenCollect"/>
+                    <Button Style="{StaticResource Btn}" Content="Archives DCE…" Click="OnOpenArchives" Margin="0"/>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

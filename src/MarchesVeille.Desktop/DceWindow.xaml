@@ -1,0 +1,87 @@
+<Window x:Class="MarchesVeille.Desktop.DceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Collecte des DCE" Width="1020" Height="720" MinWidth="860" MinHeight="600"
+        Background="{StaticResource BgBrush}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Profils -->
+            <Border Background="{StaticResource CardBrush}" CornerRadius="8" BorderBrush="{StaticResource BorderBrushSoft}" BorderThickness="1" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <TextBlock Text="Profils de collecte" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <ListBox x:Name="ProfileList" Grid.Row="1" DisplayMemberPath="Display" SelectionChanged="OnProfileSelected"/>
+                    <WrapPanel Grid.Row="2" Margin="0,8,0,0">
+                        <Button Style="{StaticResource AccentBtn}" Content="Nouveau" Click="OnNewProfile"/>
+                        <Button Style="{StaticResource Btn}" Content="Supprimer" Click="OnDeleteProfile"/>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <!-- Éditeur -->
+            <Border Grid.Column="2" Background="{StaticResource CardBrush}" CornerRadius="8" BorderBrush="{StaticResource BorderBrushSoft}" BorderThickness="1" Padding="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,10"
+                                   Text="Un avis est retenu s'il satisfait TOUS les critères renseignés d'un profil actif. Un profil sans aucun critère télécharge tous les DCE. Un critère multiple (mots-clés, organisations…) est satisfait par l'un de ses éléments."/>
+                        <TextBlock Text="Nom du profil"/>
+                        <TextBox x:Name="NameBox" Margin="0,2,0,8"/>
+                        <CheckBox x:Name="EnabledBox" Content="Profil actif" IsChecked="True" Margin="0,0,0,8"/>
+                        <TextBlock Text="Mots-clés (un par ligne ; objet, description ou acheteur)"/>
+                        <TextBox x:Name="KeywordsBox" AcceptsReturn="True" Height="70" Margin="0,2,0,8" VerticalScrollBarVisibility="Auto"/>
+                        <TextBlock Text="Mots-clés à exclure (un par ligne)"/>
+                        <TextBox x:Name="ExcludeBox" AcceptsReturn="True" Height="50" Margin="0,2,0,8" VerticalScrollBarVisibility="Auto"/>
+                        <TextBlock Text="Organisations (un fragment de nom par ligne, ex. « voies navigables »)"/>
+                        <TextBox x:Name="BuyersBox" AcceptsReturn="True" Height="50" Margin="0,2,0,8" VerticalScrollBarVisibility="Auto"/>
+                        <TextBlock Text="Types de marché (aucun coché = tous)"/>
+                        <WrapPanel Margin="0,2,0,8">
+                            <CheckBox x:Name="ChkTravaux" Content="Travaux" Margin="0,0,14,0"/>
+                            <CheckBox x:Name="ChkFournitures" Content="Fournitures" Margin="0,0,14,0"/>
+                            <CheckBox x:Name="ChkServices" Content="Services" Margin="0,0,14,0"/>
+                            <CheckBox x:Name="ChkPi" Content="PI (prestations intellectuelles)"/>
+                        </WrapPanel>
+                        <TextBlock Text="Régions (une par ligne, ex. Grand Est)"/>
+                        <TextBox x:Name="RegionsBox" AcceptsReturn="True" Height="40" Margin="0,2,0,8"/>
+                        <TextBlock Text="Tags (un par ligne, ex. VNF-DTNE)"/>
+                        <TextBox x:Name="CategoriesBox" AcceptsReturn="True" Height="40" Margin="0,2,0,10"/>
+                        <Button Style="{StaticResource AccentBtn}" Content="Enregistrer le profil" Click="OnSaveProfile" HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Lancement -->
+        <Border Grid.Row="1" Background="{StaticResource CardBrush}" CornerRadius="8" BorderBrush="{StaticResource BorderBrushSoft}" BorderThickness="1" Padding="10" Margin="0,10,0,0">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="150"/></Grid.RowDefinitions>
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock Text="Avis publiés depuis" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="DaysCombo" Width="70" Margin="0,0,6,0"/>
+                    <TextBlock Text="jours" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                    <CheckBox x:Name="ChkRetry" Content="Réessayer les accès restreints / non pris en charge" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                    <CheckBox x:Name="ChkDebug" Content="Mode diagnostic (sauvegarde les pages de chaque étape)" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                </WrapPanel>
+                <Grid Grid.Row="1" Margin="0,8,0,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Button x:Name="RunBtn" Style="{StaticResource AccentBtn}" Content="Lancer la collecte" Click="OnRun"/>
+                    <Button x:Name="CancelBtn" Grid.Column="1" Style="{StaticResource Btn}" Content="Annuler" Click="OnCancel" Visibility="Collapsed"/>
+                    <ProgressBar x:Name="Bar" Grid.Column="2" Height="14" Minimum="0" Maximum="100" Margin="8,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatText" Grid.Column="3" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                </Grid>
+                <TextBox x:Name="LogBox" Grid.Row="2" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" FontSize="12" BorderBrush="{StaticResource BorderBrushSoft}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

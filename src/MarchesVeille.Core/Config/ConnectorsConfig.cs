@@ -63,6 +63,57 @@ public sealed class HtmlConnectorConfig
     public string? DefaultRegion { get; set; }
     /// <summary>Si non vide, seuls les avis dont l'acheteur correspond à un motif sont conservés.</summary>
     public List<string> KeepBuyerPatterns { get; set; } = new();
+    /// <summary>Parcours de téléchargement anonyme du DCE sur ce portail.</summary>
+    public DceFlowConfig Dce { get; set; } = new();
+}
+
+public sealed class DceStepConfig
+{
+    /// <summary>get | link | form</summary>
+    public string Type { get; set; } = "get";
+    /// <summary>get : URL ({dceUrl}, {noticeUrl}, absolue ou relative au site).</summary>
+    public string? Url { get; set; }
+    /// <summary>link : sélecteur CSS du lien à suivre sur la page courante.</summary>
+    public string? Selector { get; set; }
+    /// <summary>form : sélecteur CSS du formulaire (défaut « form »).</summary>
+    public string? FormSelector { get; set; }
+    public Dictionary<string, string> Fields { get; set; } = new();
+    public string? SubmitName { get; set; }
+    public string? PostbackTargetField { get; set; }
+    /// <summary>Étape ignorée si l'élément est absent de la page.</summary>
+    public bool Optional { get; set; }
+}
+
+public sealed class DceFlowConfig
+{
+    public bool Enabled { get; set; }
+    public List<DceStepConfig> Steps { get; set; } = new();
+    /// <summary>Si le parcours aboutit à une page HTML contenant l'un de ces motifs, le DCE est classé « accès restreint ».</summary>
+    public List<string> RestrictedPatterns { get; set; } = new()
+    {
+        "identifiez-vous", "identification obligatoire", "mot de passe", "creer un compte",
+        "inscription obligatoire", "acces restreint", "reserve aux candidats"
+    };
+}
+
+public sealed class DceSettings
+{
+    /// <summary>Dossier des archives (relatif au dossier de l'exécutable, ou absolu).</summary>
+    public string Folder { get; set; } = "DCE";
+    public int MaxFileSizeMb { get; set; } = 500;
+    public int MaxPerRun { get; set; } = 300;
+    public int DelayMs { get; set; } = 1500;
+    public int MaxAttempts { get; set; } = 3;
+    /// <summary>Seuls les avis publiés depuis N jours sont candidats à la collecte.</summary>
+    public int PublishedWithinDays { get; set; } = 45;
+}
+
+public sealed class ClassificationConfig
+{
+    public List<string> Travaux { get; set; } = new();
+    public List<string> Fournitures { get; set; } = new();
+    public List<string> Services { get; set; } = new();
+    public List<string> Pi { get; set; } = new();
 }
 
 public sealed class ConnectorsConfig
@@ -75,6 +126,8 @@ public sealed class ConnectorsConfig
     public HtmlConnectorConfig Place { get; set; } = new();
     public HtmlConnectorConfig GrandEst { get; set; } = new();
     public List<HtmlConnectorConfig> CustomConnectors { get; set; } = new();
+    public DceSettings Dce { get; set; } = new();
+    public ClassificationConfig Classification { get; set; } = new();
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -124,6 +177,31 @@ public sealed class ConnectorsConfig
     }
   ],
 
+  // Téléchargement des DCE : dossier (relatif à l'exe), plafonds, politesse, fenêtre de publication.
+  "dce": {
+    "folder": "DCE",
+    "maxFileSizeMb": 500,
+    "maxPerRun": 300,
+    "delayMs": 1500,
+    "maxAttempts": 3,
+    "publishedWithinDays": 45
+  },
+
+  // Classification (motifs sur texte sans accents, en minuscules). Le type fourni par la source (BOAMP) prime.
+  "classification": {
+    "travaux": ["\\btravaux\\b", "\\brefection\\b", "\\brenovation\\b", "\\bconstruction\\b", "\\breconstruction\\b",
+                "\\bdragage\\b", "\\bcurage\\b", "\\brestauration\\b", "\\bterrassement", "\\bconfortement\\b",
+                "\\bremplacement des?\\b", "\\bamenagement\\b"],
+    "fournitures": ["\\bfournitures?\\b", "\\bacquisition", "\\bachats?\\b", "\\blivraison", "\\bmateriels?\\b",
+                    "\\bvehicules?\\b", "\\bequipements?\\b"],
+    "services": ["\\bservices?\\b", "\\bprestations?\\b", "\\bmaintenance\\b", "\\bentretien\\b", "\\bnettoyage\\b",
+                 "\\bgardiennage\\b", "\\bformations?\\b", "\\bassurances?\\b", "\\btransports?\\b", "\\bassistance\\b"],
+    "pi": ["\\betudes?\\b", "\\bmaitrise d'?oeuvre\\b", "\\bmoe\\b", "\\bassistance a maitrise d'?ouvrage\\b", "\\bamo\\b",
+           "\\bdiagnostics?\\b", "\\baudit\\b", "\\bconseil\\b", "\\bexpertise\\b", "\\bingenierie\\b",
+           "\\bbureau d'?etudes?\\b", "\\bcoordination sps\\b", "\\bcontrole technique\\b", "\\btopograph",
+           "\\bgeotechni", "\\bmission de\\b"]
+  },
+
   "boamp": {
     "enabled": true,
     "name": "BOAMP (DILA)",
@@ -164,6 +242,17 @@ public sealed class ConnectorsConfig
       "nextSelector": "a[title*='suivante']",
       "postbackTarget": "ctl0$CONTENU_PAGE$resultSearch$PagerTop$ctl2"
     },
+    // Parcours de téléchargement anonyme du DCE : à valider avec le mode diagnostic (--dce-debug), voir le guide.
+    "dce": {
+      "enabled": true,
+      "steps": [
+        { "type": "get", "url": "{dceUrl}" },
+        { "type": "link", "selector": "a[href*='TelechargementDce']" },
+        { "type": "form", "formSelector": "form", "submitName": "ctl0$CONTENU_PAGE$validateButton",
+          "postbackTargetField": "PRADO_POSTBACK_TARGET", "optional": true },
+        { "type": "link", "selector": "a[href*='DownloadCompleteDce']" }
+      ]
+    },
     "maxPages": 30,
     "keepBuyerPatterns": []
   },
@@ -195,6 +284,17 @@ public sealed class ConnectorsConfig
       "nextSelector": "a[title*='suivante']",
       "postbackTarget": "ctl0$CONTENU_PAGE$resultSearch$PagerTop$ctl2"
     },
+    // Parcours de téléchargement anonyme du DCE : à valider avec le mode diagnostic (--dce-debug), voir le guide.
+    "dce": {
+      "enabled": true,
+      "steps": [
+        { "type": "get", "url": "{dceUrl}" },
+        { "type": "link", "selector": "a[href*='TelechargementDce']" },
+        { "type": "form", "formSelector": "form", "submitName": "ctl0$CONTENU_PAGE$validateButton",
+          "postbackTargetField": "PRADO_POSTBACK_TARGET", "optional": true },
+        { "type": "link", "selector": "a[href*='DownloadCompleteDce']" }
+      ]
+    },
     "maxPages": 30,
     "defaultRegion": "Grand Est",
     "keepBuyerPatterns": []
@@ -220,6 +320,7 @@ public sealed class ConnectorsConfig
         "url": "td.objet a@href"
       },
       "paging": { "mode": "link", "nextSelector": "a.suivant" },
+      "dce": { "enabled": false, "steps": [ { "type": "get", "url": "{dceUrl}" }, { "type": "link", "selector": "a.telecharger-dce" } ] },
       "defaultRegion": "Grand Est"
     }
   ]

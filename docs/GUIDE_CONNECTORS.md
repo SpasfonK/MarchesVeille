@@ -94,3 +94,88 @@ MarchesVeille.exe --scrap [--source=all|boamp|place|grandest|<id>[,<id>]] [--day
 Codes de sortie : `0` succès, `1` au moins une source en erreur (les autres sont ingérées), `2` arguments/configuration invalides.
 Le journal est écrit dans `marches-scrap.log` à côté de la base. Pour le Planificateur de tâches Windows : programme
 `MarchesVeille.exe`, arguments `--scrap --source=all --days=3`, déclencheur quotidien.
+
+
+---
+
+# Téléchargement anonyme des DCE et archives
+
+## Principe
+
+1. **Synchroniser** les avis (`--scrap`, ou le bouton de la fenêtre principale).
+2. **Collecter** : l'application télécharge, sans identification, le DCE des avis retenus par vos **profils de collecte**,
+   puis l'enregistre sous `DCE/AAAA/MM/<acheteur>/<référence>_<objet>.zip` à côté de l'exécutable.
+3. **Retrouver** : le menu « Archives DCE… » interroge l'index (avis + noms de fichiers + texte des documents),
+   **sans limite de date de récupération**.
+
+Usage mensuel typique : `MarchesVeille.exe --scrap --days=31 --dce` (Planificateur de tâches), ou dans l'interface :
+Jours = 31, case « puis télécharger les DCE », « Lancer la synchronisation ».
+
+## Profils de collecte (interface : bouton « Collecte DCE… »)
+
+Un avis est retenu s'il satisfait **tous** les critères renseignés d'un profil **actif** (un critère multiple est satisfait par l'un de ses éléments) :
+mots-clés (objet, description, acheteur), mots-clés exclus, organisations (fragment de nom), types (**Travaux, Fournitures, Services, PI**),
+régions, tags (ex. `VNF-DTNE`). **Un profil sans critère télécharge tout.** Plusieurs profils se cumulent (OU).
+Les profils sont stockés dans `marches.db`. En ligne de commande, `--dce-all` ignore les profils.
+
+Type de marché et PI : fournis par la source quand elle les donne (BOAMP : `type_marche`), sinon déduits par les motifs de la
+section `classification` de `connectors.json` (à adapter à votre vocabulaire). Une PI (étude, maîtrise d'œuvre, AMO, audit…) est aussi comptée comme Service.
+
+## Réglages (`connectors.json`, section `dce`)
+
+| Clé | Rôle |
+|---|---|
+| `folder` | Dossier des archives (relatif à l'exe, ou absolu) |
+| `maxFileSizeMb` | Taille maximale d'un DCE (au-delà : échec, rien n'est conservé) |
+| `maxPerRun` | Nombre maximal de DCE par exécution ; le reste est repris au lancement suivant |
+| `delayMs` | Pause entre deux téléchargements (soyez courtois avec les plateformes) |
+| `maxAttempts` | Tentatives avant abandon d'un DCE en échec |
+| `publishedWithinDays` | Seuls les avis publiés depuis N jours sont candidats |
+
+Statuts d'une archive : `ok`, `failed` (réessayé jusqu'à `maxAttempts`), `restricted` (identification ou inscription exigée),
+`unsupported` (aucun connecteur pour ce portail). `restricted` et `unsupported` ne sont retentés qu'avec `--dce-retry` / la case dédiée.
+
+## Parcours de téléchargement d'un portail (`dce` dans un connecteur)
+
+Chaque connecteur HTML décrit comment atteindre le fichier **anonymement**, sous forme d'étapes exécutées dans une même session :
+
+```json
+"dce": {
+  "enabled": true,
+  "steps": [
+    { "type": "get",  "url": "{dceUrl}" },
+    { "type": "link", "selector": "a[href*='TelechargementDce']" },
+    { "type": "form", "formSelector": "form", "fields": { "choix": "anonyme" },
+      "submitName": "valider", "postbackTargetField": "PRADO_POSTBACK_TARGET", "optional": true },
+    { "type": "link", "selector": "a[href*='DownloadCompleteDce']" }
+  ],
+  "restrictedPatterns": ["identifiez-vous", "mot de passe"]
+}
+```
+
+- `get` : ouvre une URL (`{dceUrl}` = lien du DCE s'il est connu, sinon `{noticeUrl}` = page de l'avis).
+- `link` : suit le premier lien correspondant au sélecteur CSS de la page courante.
+- `form` : soumet un formulaire de la page courante (champs cachés repris, `fields` forcés). **Aucune coordonnée n'est envoyée** : seuls les champs que vous configurez le sont.
+- `optional` : l'étape est ignorée si l'élément est absent. Le parcours s'arrête dès qu'une réponse est un fichier (zip, pdf…).
+- Sans `steps`, le lien `{dceUrl}` est téléchargé directement.
+- Si le parcours finit sur une page HTML contenant un des `restrictedPatterns`, l'archive est marquée `restricted`.
+- Un avis BOAMP est traité par le connecteur dont l'adresse correspond à l'URL du DCE trouvée dans l'avis (profil acheteur).
+
+> Les parcours fournis pour PLACE et le Grand Est sont des **valeurs de départ non vérifiées**. Lancez `--dce-only --dce-all --dce-max=3 --dce-debug`
+> (ou cochez « Mode diagnostic ») : les pages HTML de chaque étape sont sauvegardées dans `DCE/_diagnostic/<avis>/etapeN.html`.
+> Ouvrez-les pour corriger sélecteurs et noms de champs, relancez, jusqu'à obtenir un zip.
+
+## Archives : recherche
+
+- Barre de recherche : mots, `"phrase exacte"`, `AND` / `OR` / `NOT`, insensible aux accents et à la casse.
+- « Chercher dans » : tout, avis (objet, acheteur, référence), noms de fichiers, contenu des documents.
+- Recherche avancée : organisation, référence, type (Travaux / Fournitures / Services / PI), région, dates de publication et de récupération, tri.
+- Texte indexé : PDF avec couche texte, Word, Excel, PowerPoint, LibreOffice, txt/csv/xml/html, zips imbriqués (2 niveaux). Les **PDF scannés** (images) ne sont pas lisibles : seuls leurs noms de fichiers sont indexés (pas d'OCR).
+- Les archives restent trouvables même si l'avis a disparu de la base : l'index copie les informations de l'avis.
+
+## À garder en tête
+
+- Un téléchargement anonyme reste visible de l'acheteur dans les statistiques de la plateforme (nombre de retraits), sans nom.
+- Respectez les conditions d'utilisation des plateformes : gardez des pauses raisonnables (`delayMs`) et des volumes mesurés.
+- Pour une consultation sous le seuil de publicité obligatoire ou réservée, le portail peut exiger une inscription : l'archive sera `restricted`
+  et le bouton « Accéder au DCE » vous permet de la récupérer dans votre navigateur.

@@ -30,6 +30,15 @@ La bibliothèque native SQLite est embarquée dans l'exe et extraite dans le dos
 Sans machine Windows : poussez le dépôt sur GitHub, le workflow `build` exécute les tests, publie l'exe
 et le met à disposition en artefact.
 
+## DCE : collecte anonyme et archives
+
+Après la synchronisation, l'application peut télécharger **anonymement** les DCE des avis retenus par vos profils de collecte
+(mot-clé, organisation, Travaux / Fournitures / Services / PI), les ranger dans `DCE/` et les **indexer** (avis, noms de fichiers,
+texte des PDF / Word / Excel…). La fenêtre « Archives DCE… » permet ensuite de les retrouver par recherche ou recherche avancée,
+quelle que soit leur date de récupération. Détails et réglage des portails : `docs/GUIDE_CONNECTORS.md`.
+
+Mensuel : `MarchesVeille.exe --scrap --days=31 --dce`
+
 ## Utilisation
 
 - **Interface** : lancer `MarchesVeille.exe`. Recherche : mots, `"phrase exacte"`, `AND` / `OR` / `NOT`.
@@ -39,6 +48,6 @@ et le met à disposition en artefact.
 
 ## État de validation
 
-Code écrit et relu sans compilation ni exécution locale. La première exécution de la CI est la vraie validation :
+Code écrit et relu sans compilation ni exécution locale (ni téléchargement réel de DCE). La première exécution de la CI est la vraie validation :
 corrigez d'abord ce qu'elle signale. Les sélecteurs PLACE / Grand Est de `connectors.json` sont des valeurs de départ
 à vérifier sur les sites réels.

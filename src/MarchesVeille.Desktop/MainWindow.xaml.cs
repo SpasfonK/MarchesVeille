@@ -29,6 +29,8 @@ public partial class MainWindow : Window
     private readonly ConnectorsConfig _cfg;
     private readonly ConnectorRegistry _registry;
     private readonly IngestionService _ingestion;
+    private readonly AppServices _services;
+    private HashSet<string> _archived = new();
 
     private readonly ObservableCollection<ResultRow> _rows = new();
     private readonly ObservableCollection<SavedSearchVm> _saved = new();
@@ -53,15 +55,16 @@ public partial class MainWindow : Window
 
         var db = new Database(Path.Combine(dataDir, "marches.db"));
         db.Migrate();
-        _repo = new NoticeRepository(db);
-        _registry = new ConnectorRegistry(_cfg);
-        _ingestion = new IngestionService(_repo, new VnfTargetProfile(_cfg.TaggingRules));
+        _services = new AppServices(dataDir, _cfg, db);
+        _repo = _services.Notices;
+        _registry = _services.Registry;
+        _ingestion = new IngestionService(_repo, new VnfTargetProfile(_cfg.TaggingRules), new NoticeClassifier(_cfg.Classification));
 
         ResultsGrid.ItemsSource = _rows;
         SavedList.ItemsSource = _saved;
         SourceCombo.ItemsSource = new[] { "all" }.Concat(_registry.All.Select(p => p.SourceId)).ToList();
         SourceCombo.SelectedIndex = 0;
-        DaysCombo.ItemsSource = new[] { 1, 3, 7, 14 };
+        DaysCombo.ItemsSource = new[] { 1, 3, 7, 14, 31 };
         DaysCombo.SelectedItem = 3;
 
         _debounce.Tick += async (_, _) => { _debounce.Stop(); await RunSearchAsync(); };
@@ -75,6 +78,7 @@ public partial class MainWindow : Window
         Text = SearchBox.Text,
         Region = ChipGrandEst.IsChecked == true ? "Grand Est" : null,
         BuyerCategory = ChipVnf.IsChecked == true ? "VNF-DTNE" : null,
+        MarketType = TypeCombo.SelectedIndex switch { 1 => "Travaux", 2 => "Fournitures", 3 => "Services", 4 => "PI", _ => null },
         OnlyActive = ChipActive.IsChecked == true,
         OnlyUnread = ChipUnread.IsChecked == true,
         OnlyFavorites = ChipFav.IsChecked == true,
@@ -92,6 +96,7 @@ public partial class MainWindow : Window
             ChipGrandEst.IsChecked = f.Region == "Grand Est";
             ChipVnf.IsChecked = f.BuyerCategory == "VNF-DTNE";
             ChipActive.IsChecked = f.OnlyActive;
+            TypeCombo.SelectedIndex = f.MarketType switch { "Travaux" => 1, "Fournitures" => 2, "Services" => 3, "PI" => 4, _ => 0 };
             ChipUnread.IsChecked = f.OnlyUnread;
             ChipFav.IsChecked = f.OnlyFavorites;
             DeadlineSlider.Value = f.DeadlineWithinDays ?? 0;
@@ -130,12 +135,13 @@ public partial class MainWindow : Window
         var version = ++_searchVersion;
         try
         {
-            var (results, total) = await Task.Run(() => (_repo.Search(f), _repo.Count(f)));
+            var (results, total, archived) = await Task.Run(() => (_repo.Search(f), _repo.Count(f), _services.Archives.ArchivedNoticeIds()));
             if (version != _searchVersion) return;
+            _archived = archived;
 
             var keepId = (ResultsGrid.SelectedItem as ResultRow)?.Notice.Id;
             _rows.Clear();
-            foreach (var r in results) _rows.Add(new ResultRow(r));
+            foreach (var r in results) _rows.Add(new ResultRow(r) { HasDce = archived.Contains(r.Notice.Id) });
             CountText.Text = total > results.Count ? $"{results.Count} affichés sur {total} avis" : $"{total} avis";
 
             if (keepId != null)
@@ -161,7 +167,7 @@ public partial class MainWindow : Window
             DetailTitle.Text = "Sélectionnez un avis";
             DetailMeta.Text = "";
             DetailText.Text = "";
-            foreach (var b in new[] { BtnOpen, BtnDce, BtnFav, BtnRead }) b.IsEnabled = false;
+            foreach (var b in new[] { BtnOpen, BtnDce, BtnFav, BtnRead, BtnArchive }) b.IsEnabled = false;
             return;
         }
 
@@ -176,7 +182,7 @@ public partial class MainWindow : Window
         DetailText.Text = n.Description;
         BtnOpen.IsEnabled = !string.IsNullOrWhiteSpace(n.UrlNotice);
         BtnDce.IsEnabled = !string.IsNullOrWhiteSpace(n.UrlDce);
-        BtnFav.IsEnabled = BtnRead.IsEnabled = true;
+        BtnFav.IsEnabled = BtnRead.IsEnabled = BtnArchive.IsEnabled = true;
         RefreshFlagButtons(row);
 
         if (!row.IsRead)
@@ -195,6 +201,7 @@ public partial class MainWindow : Window
     {
         BtnFav.Content = row.IsFavorite ? "★ Retirer des favoris" : "☆ Favori";
         BtnRead.Content = row.IsRead ? "Marquer non lu" : "Marquer lu";
+        BtnArchive.Content = row.HasDce ? "📦 Ouvrir l'archive DCE" : "Télécharger le DCE (anonyme)";
     }
 
     private async void OnToggleFavorite(object sender, RoutedEventArgs e)
@@ -266,6 +273,54 @@ public partial class MainWindow : Window
         await RefreshSavedAsync();
     }
 
+    // ------------------------------------------------------------ DCE
+    private async void OnArchiveAction(object sender, RoutedEventArgs e)
+    {
+        if (Selected is not { } row) return;
+        var n = row.Notice;
+
+        if (row.HasDce)
+        {
+            var a = await Task.Run(() => _services.Archives.GetByNotice(n.Id));
+            if (a != null) OpenFile(_services.Collector.FullPath(a));
+            return;
+        }
+
+        BtnArchive.IsEnabled = false;
+        StatusText.Text = "Téléchargement anonyme du DCE…";
+        try
+        {
+            var archive = await Task.Run(() => _services.Collector.DownloadSingleAsync(n, debug: false, CancellationToken.None));
+            switch (archive.Status)
+            {
+                case DceStatus.Ok:
+                    row.HasDce = true;
+                    StatusText.Text = $"DCE archivé : {archive.FilePath}";
+                    break;
+                case DceStatus.Restricted:
+                    StatusText.Text = "DCE soumis à identification : téléchargement anonyme impossible.";
+                    MessageBox.Show(this, "Ce portail demande une identification ou une inscription pour ce DCE.\nUtilisez « Accéder au DCE » pour le récupérer dans votre navigateur.",
+                        "DCE", MessageBoxButton.OK, MessageBoxImage.Information);
+                    break;
+                default:
+                    StatusText.Text = "DCE non récupéré : " + archive.Error;
+                    break;
+            }
+        }
+        catch (Exception ex) { StatusText.Text = "Erreur DCE : " + ex.Message; }
+        finally { RefreshFlagButtons(row); BtnArchive.IsEnabled = true; }
+    }
+
+    private void OpenFile(string path)
+    {
+        if (!File.Exists(path)) { StatusText.Text = "Archive introuvable : " + path; return; }
+        try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
+        catch (Exception ex) { StatusText.Text = "Impossible d'ouvrir l'archive : " + ex.Message; }
+    }
+
+    private void OnOpenCollect(object sender, RoutedEventArgs e) => new DceWindow(_services) { Owner = this }.Show();
+    private void OnOpenArchives(object sender, RoutedEventArgs e) => new ArchiveWindow(_services) { Owner = this }.Show();
+
     // ------------------------------------------------------------ synchronisation
     private async void OnSync(object sender, RoutedEventArgs e)
     {
@@ -294,6 +349,20 @@ public partial class MainWindow : Window
             {
                 var errors = string.Join("\n", summary.Sources.Where(s => s.Error != null).Select(s => $"• {s.SourceId} : {s.Error}"));
                 MessageBox.Show(this, "Certaines sources ont échoué :\n\n" + errors, "Synchronisation", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            if (ChkDce.IsChecked == true)
+            {
+                var profiles = (await Task.Run(() => _services.Archives.ListProfiles())).Where(p => p.Enabled).ToList();
+                var dceProgress = new Progress<DceProgress>(p =>
+                {
+                    StatusText.Text = $"DCE {p.Done}/{p.Total} — {p.Message}";
+                    SyncBar.Value = p.Total == 0 ? 100 : 100.0 * p.Done / p.Total;
+                });
+                var dce = await Task.Run(() => _services.Collector.RunAsync(profiles, new DceRunOptions(), dceProgress, ct), ct);
+                SyncBar.Value = 100;
+                StatusText.Text = "Terminé : " + summary.ToOneLine() + " — " + dce.ToOneLine();
+                if (dce.Messages.Count > 0)
+                    MessageBox.Show(this, dce.ToText(), "Collecte des DCE", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             await RunSearchAsync();
             await RefreshSavedAsync();

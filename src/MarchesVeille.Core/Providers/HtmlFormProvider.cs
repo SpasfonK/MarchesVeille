@@ -14,7 +14,7 @@ namespace MarchesVeille.Core.Providers;
 /// (champs cachés Prado/ASP.NET repris automatiquement, cookies de session conservés), lit le tableau de
 /// résultats via des sélecteurs CSS et suit la pagination (lien ou postback).
 /// </summary>
-public class HtmlFormProvider : IMarketplaceProvider
+public class HtmlFormProvider : IMarketplaceProvider, IDceDownloadProvider
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     private static readonly Regex Spaces = new(@"\s+", RegexOptions.Compiled);
@@ -118,6 +118,12 @@ public class HtmlFormProvider : IMarketplaceProvider
         return results;
     }
 
+    // ----------------------------------------------------------------- DCE
+    public bool CanDownload(Notice n) => DceFlow.Handles(Cfg, n);
+
+    public Task<DceDownloadResult> DownloadDceAsync(Notice n, string tempDir, long maxBytes, string? debugDir, CancellationToken ct) =>
+        new DceFlow(_http, Global, Cfg).RunAsync(n, tempDir, maxBytes, debugDir, ct);
+
     // ----------------------------------------------------------------- HTTP
     private Task<(string Body, Uri FinalUri)> GetAsync(Uri url, CancellationToken ct) =>
         HttpRetry.SendForStringAsync(_http, () => new HttpRequestMessage(HttpMethod.Get, url), Global.MaxRetries, Global.RequestDelayMs, ct);
@@ -128,11 +134,11 @@ public class HtmlFormProvider : IMarketplaceProvider
             Content = new FormUrlEncodedContent(fields)
         }, Global.MaxRetries, Global.RequestDelayMs, ct);
 
-    private static Uri Resolve(Uri baseUri, string? href) =>
+    internal static Uri Resolve(Uri baseUri, string? href) =>
         string.IsNullOrWhiteSpace(href) ? baseUri : new Uri(baseUri, href);
 
     // ----------------------------------------------------------------- formulaire
-    private static Dictionary<string, string> CollectFields(IHtmlFormElement form)
+    internal static Dictionary<string, string> CollectFields(IHtmlFormElement form)
     {
         var fields = new Dictionary<string, string>();
         foreach (var el in form.QuerySelectorAll("input,select,textarea"))

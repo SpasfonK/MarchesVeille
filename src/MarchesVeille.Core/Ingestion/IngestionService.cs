@@ -49,11 +49,13 @@ public sealed class IngestionService
 {
     private readonly NoticeRepository _repo;
     private readonly VnfTargetProfile _tagger;
+    private readonly NoticeClassifier? _classifier;
 
-    public IngestionService(NoticeRepository repo, VnfTargetProfile tagger)
+    public IngestionService(NoticeRepository repo, VnfTargetProfile tagger, NoticeClassifier? classifier = null)
     {
         _repo = repo;
         _tagger = tagger;
+        _classifier = classifier;
     }
 
     public async Task<IngestionSummary> RunAsync(
@@ -96,6 +98,7 @@ public sealed class IngestionService
                     n.EnsureId();
                     n.Region ??= Geo.RegionOf(n.Department);
                     _tagger.Apply(n);
+                    _classifier?.Apply(n);
                     if (!unique.TryAdd(n.Id, n)) intraBatchDuplicates++;
                 }
 

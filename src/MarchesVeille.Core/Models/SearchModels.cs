@@ -11,6 +11,8 @@ public sealed class SearchFilters
     public string? Region { get; set; }
     public string? BuyerCategory { get; set; }
     public string? SourceId { get; set; }
+    /// <summary>Travaux | Fournitures | Services | PI.</summary>
+    public string? MarketType { get; set; }
     /// <summary>Date limite >= maintenant (UTC).</summary>
     public bool OnlyActive { get; set; }
     /// <summary>Date limite comprise entre maintenant et maintenant + N jours.</summary>

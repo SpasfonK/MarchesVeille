@@ -17,6 +17,9 @@ public sealed class ConnectorRegistry
 
     public IReadOnlyList<IMarketplaceProvider> All => _all;
 
+    /// <summary>Connecteurs capables de télécharger des DCE.</summary>
+    public IReadOnlyList<IDceDownloadProvider> DceProviders => _all.OfType<IDceDownloadProvider>().ToList();
+
     public IReadOnlyList<IMarketplaceProvider> Select(string? arg) => Filter(_all, arg);
 
     /// <summary>"all" ou liste d'identifiants séparés par des virgules. Lève ArgumentException si un identifiant est inconnu.</summary>

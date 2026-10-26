@@ -14,6 +14,7 @@ public static class TextNormalizer
         foreach (var ch in d)
             if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark) sb.Append(ch);
         return sb.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant()
+            .Replace("œ", "oe").Replace("æ", "ae").Replace('\u2019', '\'')
             .Replace('\u2010', '-').Replace('\u2011', '-').Replace('\u2013', '-').Replace('\u2014', '-');
     }
 }

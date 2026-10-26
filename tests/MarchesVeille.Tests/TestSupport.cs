@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Net.Http.Headers;
 using MarchesVeille.Core.Data;
 using MarchesVeille.Core.Models;
 using MarchesVeille.Core.Providers;
@@ -87,6 +89,14 @@ public sealed class FakeHandler : HttpMessageHandler
     public static HttpResponseMessage Html(string html) =>
         new(System.Net.HttpStatusCode.OK) { Content = new StringContent(html, System.Text.Encoding.UTF8, "text/html") };
 
+    public static HttpResponseMessage File(byte[] bytes, string fileName, string mediaType = "application/zip")
+    {
+        var content = new ByteArrayContent(bytes);
+        content.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+        content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment") { FileName = fileName };
+        return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content };
+    }
+
     public static HttpResponseMessage Json(string json) =>
         new(System.Net.HttpStatusCode.OK) { Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json") };
 }
@@ -108,5 +118,61 @@ public sealed class MockProvider : IMarketplaceProvider
             BuyerName = n.BuyerName, Department = n.Department
         }).ToList();
         return Task.FromResult(copy);
+    }
+}
+
+public static class ZipHelper
+{
+    public static byte[] Make(params (string Name, string Content)[] entries)
+    {
+        using var ms = new MemoryStream();
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            foreach (var (name, content) in entries)
+            {
+                var e = zip.CreateEntry(name);
+                using var w = new StreamWriter(e.Open(), new System.Text.UTF8Encoding(false));
+                w.Write(content);
+            }
+        return ms.ToArray();
+    }
+
+    public static byte[] MakeBytes(params (string Name, byte[] Content)[] entries)
+    {
+        using var ms = new MemoryStream();
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            foreach (var (name, content) in entries)
+            {
+                var e = zip.CreateEntry(name);
+                using var s = e.Open();
+                s.Write(content);
+            }
+        return ms.ToArray();
+    }
+
+    /// <summary>Document Word minimal : un .docx est un zip contenant word/document.xml.</summary>
+    public static byte[] Docx(string text) =>
+        Make(("word/document.xml", $"<w:document><w:body><w:p><w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>"));
+}
+
+public sealed class FakeDceProvider : IDceDownloadProvider
+{
+    public string SourceId => "boamp";
+    public string? BaseUrl => null;
+    public int Calls { get; private set; }
+    public Func<Notice, DceOutcome> Decide { get; set; } = _ => DceOutcome.Downloaded;
+    public bool CanDownload(Notice n) => true;
+
+    public Task<DceDownloadResult> DownloadDceAsync(Notice n, string tempDir, long maxBytes, string? debugDir, CancellationToken ct)
+    {
+        Calls++;
+        var outcome = Decide(n);
+        if (outcome != DceOutcome.Downloaded)
+            return Task.FromResult(new DceDownloadResult(outcome, null, null, 0, "simulé : " + outcome));
+        Directory.CreateDirectory(tempDir);
+        var path = Path.Combine(tempDir, Guid.NewGuid().ToString("N") + ".part");
+        File.WriteAllBytes(path, ZipHelper.Make(
+            ("cctp.txt", "Le présent CCTP décrit la rénovation de l'écluse et le dragage."),
+            ("lot1/bpu.txt", "Bordereau des prix unitaires")));
+        return Task.FromResult(new DceDownloadResult(DceOutcome.Downloaded, path, "dce.zip", new FileInfo(path).Length, null));
     }
 }

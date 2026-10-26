@@ -3,7 +3,6 @@ using MarchesVeille.Core.Cli;
 using MarchesVeille.Core.Config;
 using MarchesVeille.Core.Models;
 using MarchesVeille.Core.Providers;
-using Xunit;
 
 namespace MarchesVeille.Tests;
 
@@ -232,7 +231,7 @@ public class Phase2ConnectorTests
     public async Task Cli_validates_arguments()
     {
         using var t = new TestDb();
-        IReadOnlyList<IMarketplaceProvider> Factory(ConnectorsConfig _) => new IMarketplaceProvider[] { new MockProvider("boamp", Array.Empty<Notice>()) };
+        IReadOnlyList<IMarketplaceProvider> Factory(ConnectorsConfig _) => new IMarketplaceProvider[] { new MockProvider("boamp", new()) };
 
         var o1 = new StringWriter();
         Assert.Equal(2, await CliRunner.RunAsync(new[] { "--scrap", "--source=inconnue" }, o1, t.Dir, Factory));

@@ -16,6 +16,10 @@ public sealed class Notice
     public string? Region { get; set; }
     /// <summary>Tag de qualification (ex. "VNF-DTNE").</summary>
     public string? BuyerCategory { get; set; }
+    /// <summary>Travaux | Fournitures | Services (null si inconnu).</summary>
+    public string? MarketType { get; set; }
+    /// <summary>Prestation intellectuelle (études, maîtrise d'œuvre, AMO, audit…).</summary>
+    public bool IsPi { get; set; }
     public DateTime? PublicationDate { get; set; }
     public DateTime? DeadlineDate { get; set; }
     public string? UrlNotice { get; set; }

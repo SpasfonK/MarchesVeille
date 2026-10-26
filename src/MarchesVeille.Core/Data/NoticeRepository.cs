@@ -18,21 +18,21 @@ public sealed class NoticeRepository
         return d.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
     }
 
-    private static string? Iso(DateTime? d) => d.HasValue ? Iso(d.Value) : null;
+    internal static string? Iso(DateTime? d) => d.HasValue ? Iso(d.Value) : null;
 
-    private static DateTime? ParseIso(string? s) =>
+    internal static DateTime? ParseIso(string? s) =>
         !string.IsNullOrEmpty(s) &&
         DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var d)
             ? d : null;
 
-    private static object Db(string? s) => (object?)s ?? DBNull.Value;
+    internal static object Db(string? s) => (object?)s ?? DBNull.Value;
 
     // ------------------------------------------------------------ bulk upsert
     private const string UpsertSql = """
 INSERT INTO notices (id, source_id, reference, title, description, buyer_name, buyer_siret, department, region,
-                     buyer_category, publication_date, deadline_date, url_notice, url_dce, created_at)
+                     buyer_category, market_type, is_pi, publication_date, deadline_date, url_notice, url_dce, created_at)
 VALUES ($id, $source_id, $reference, $title, $description, $buyer_name, $buyer_siret, $department, $region,
-        $buyer_category, $publication_date, $deadline_date, $url_notice, $url_dce, $created_at)
+        $buyer_category, $market_type, $is_pi, $publication_date, $deadline_date, $url_notice, $url_dce, $created_at)
 ON CONFLICT(id) DO UPDATE SET
     title            = excluded.title,
     description      = excluded.description,
@@ -41,6 +41,8 @@ ON CONFLICT(id) DO UPDATE SET
     department       = COALESCE(excluded.department, department),
     region           = COALESCE(excluded.region, region),
     buyer_category   = excluded.buyer_category,
+    market_type      = COALESCE(excluded.market_type, market_type),
+    is_pi            = excluded.is_pi,
     publication_date = COALESCE(excluded.publication_date, publication_date),
     deadline_date    = COALESCE(excluded.deadline_date, deadline_date),
     url_notice       = COALESCE(excluded.url_notice, url_notice),
@@ -50,7 +52,7 @@ ON CONFLICT(id) DO UPDATE SET
     private static readonly string[] UpsertParams =
     {
         "$id", "$source_id", "$reference", "$title", "$description", "$buyer_name", "$buyer_siret", "$department",
-        "$region", "$buyer_category", "$publication_date", "$deadline_date", "$url_notice", "$url_dce", "$created_at"
+        "$region", "$buyer_category", "$market_type", "$is_pi", "$publication_date", "$deadline_date", "$url_notice", "$url_dce", "$created_at"
     };
 
     /// <summary>Insertion en masse dans une transaction. Les favoris / lus des avis existants sont conservés.</summary>
@@ -67,7 +69,7 @@ ON CONFLICT(id) DO UPDATE SET
         using var up = conn.CreateCommand();
         up.Transaction = tx;
         up.CommandText = UpsertSql;
-        var p = UpsertParams.ToDictionary(n => n, n => up.Parameters.Add(n, SqliteType.Text));
+        var p = UpsertParams.ToDictionary(n => n, n => up.Parameters.Add(n, n == "$is_pi" ? SqliteType.Integer : SqliteType.Text));
 
         int inserted = 0, updated = 0;
         foreach (var n in notices)
@@ -86,6 +88,8 @@ ON CONFLICT(id) DO UPDATE SET
             p["$department"].Value = Db(n.Department);
             p["$region"].Value = Db(n.Region);
             p["$buyer_category"].Value = Db(n.BuyerCategory);
+            p["$market_type"].Value = Db(n.MarketType);
+            p["$is_pi"].Value = n.IsPi ? 1 : 0;
             p["$publication_date"].Value = Db(Iso(n.PublicationDate));
             p["$deadline_date"].Value = Db(Iso(n.DeadlineDate));
             p["$url_notice"].Value = Db(n.UrlNotice);
@@ -188,6 +192,11 @@ ON CONFLICT(id) DO UPDATE SET
         }
         if (!string.IsNullOrWhiteSpace(f.Region)) { sb.Append(" AND n.region = $region"); cmd.Parameters.AddWithValue("$region", f.Region); }
         if (!string.IsNullOrWhiteSpace(f.BuyerCategory)) { sb.Append(" AND n.buyer_category = $cat"); cmd.Parameters.AddWithValue("$cat", f.BuyerCategory); }
+        if (!string.IsNullOrWhiteSpace(f.MarketType))
+        {
+            if (f.MarketType.Equals("PI", StringComparison.OrdinalIgnoreCase)) sb.Append(" AND n.is_pi = 1");
+            else { sb.Append(" AND n.market_type = $mt"); cmd.Parameters.AddWithValue("$mt", f.MarketType); }
+        }
         if (!string.IsNullOrWhiteSpace(f.SourceId)) { sb.Append(" AND n.source_id = $src"); cmd.Parameters.AddWithValue("$src", f.SourceId); }
 
         if (f.DeadlineWithinDays is int days && days > 0)
@@ -208,7 +217,7 @@ ON CONFLICT(id) DO UPDATE SET
         return sb.ToString();
     }
 
-    private static Notice ReadNotice(SqliteDataReader r)
+    internal static Notice ReadNotice(SqliteDataReader r)
     {
         string? Str(string c) { var i = r.GetOrdinal(c); return r.IsDBNull(i) ? null : r.GetString(i); }
         bool Flag(string c) => r.GetInt32(r.GetOrdinal(c)) == 1;
@@ -224,6 +233,8 @@ ON CONFLICT(id) DO UPDATE SET
             Department = Str("department"),
             Region = Str("region"),
             BuyerCategory = Str("buyer_category"),
+            MarketType = Str("market_type"),
+            IsPi = Flag("is_pi"),
             PublicationDate = ParseIso(Str("publication_date")),
             DeadlineDate = ParseIso(Str("deadline_date")),
             UrlNotice = Str("url_notice"),

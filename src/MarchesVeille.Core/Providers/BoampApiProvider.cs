@@ -12,6 +12,7 @@ namespace MarchesVeille.Core.Providers;
 public sealed class BoampApiProvider : IMarketplaceProvider
 {
     private static readonly Regex Siret = new(@"\b\d{14}\b", RegexOptions.Compiled);
+    private static readonly Regex Url = new(@"https?://[^\s""\\<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private readonly BoampConfig _cfg;
     private readonly ConnectorsConfig _global;
@@ -124,6 +125,12 @@ public sealed class BoampApiProvider : IMarketplaceProvider
 
         var siret = rawDonnees != null ? Siret.Match(rawDonnees) : Match.Empty;
 
+        // URL du DCE : champ dédié s'il existe, sinon première URL (hors BOAMP) trouvée dans le texte de l'avis
+        var dceUrl = JsonUtil.GetString(rec, "url_profil_acheteur", "urlprofilacheteur", "url_document", "url_dce");
+        if (string.IsNullOrWhiteSpace(dceUrl) && rawDonnees != null)
+            dceUrl = Url.Matches(rawDonnees).Select(m => m.Value.TrimEnd('.', ',', ';', ')'))
+                .FirstOrDefault(u => !u.Contains("boamp.fr", StringComparison.OrdinalIgnoreCase));
+
         return new Notice
         {
             SourceId = SourceId,
@@ -136,6 +143,8 @@ public sealed class BoampApiProvider : IMarketplaceProvider
             Region = Geo.RegionOf(dept),
             PublicationDate = DateParsing.ParseIso(JsonUtil.GetString(rec, "dateparution")),
             DeadlineDate = DateParsing.ParseIso(JsonUtil.GetString(rec, "datelimitereponse")),
+            MarketType = Ingestion.NoticeClassifier.NormalizeMarketType(JsonUtil.GetString(rec, "type_marche", "nature_categorise_libelle")),
+            UrlDce = Uri.TryCreate(dceUrl, UriKind.Absolute, out _) ? dceUrl : null,
             UrlNotice = JsonUtil.GetString(rec, "url_avis") ?? $"https://www.boamp.fr/pages/avis/?q=idweb:{reference}"
         };
     }

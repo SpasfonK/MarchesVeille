@@ -36,6 +36,13 @@ jobs:
           if (-not (Test-Path ./publish/connectors.json)) { throw "connectors.json non créé" }
           if ($p.ExitCode -eq 2) { throw "Arguments ou configuration invalides" }
 
+      - name: Smoke test DCE (sans profil, ne doit rien télécharger ni planter)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath ./publish/MarchesVeille.exe -ArgumentList '--dce-only' -Wait -PassThru
+          Write-Host "Code de sortie : $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "La collecte DCE a échoué sans profil" }
+
       - name: Upload exe
         uses: actions/upload-artifact@v4
         with:

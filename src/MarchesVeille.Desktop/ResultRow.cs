@@ -37,6 +37,10 @@ public sealed class ResultRow : INotifyPropertyChanged
 
     public string BuyerName => Notice.BuyerName;
     public string Department => Notice.Department ?? "";
+    public string TypeLabel => string.Join(" · ", new[] { Notice.MarketType, Notice.IsPi ? "PI" : null }.Where(s => !string.IsNullOrEmpty(s)));
+    private bool _hasDce;
+    public bool HasDce { get => _hasDce; set { if (_hasDce != value) { _hasDce = value; OnChanged(); OnChanged(nameof(DceMark)); } } }
+    public string DceMark => _hasDce ? "📦" : "";
     public string Category => Notice.BuyerCategory ?? "";
     public DateTime? Published => Notice.PublicationDate?.ToLocalTime();
     public DateTime? Deadline => Notice.DeadlineDate?.ToLocalTime();
